@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>多平台账号自动化运营系统</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.6;
+      letter-spacing: 0.2px;
+    }
+    
+    .glass {
+      background: rgba(31, 41, 55, 0.4);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .hover-lift:hover {
+      transform: translateY(-4px);
+    }
+    
+    .hover-glow:hover {
+      box-shadow: 0 0 20px rgba(129, 140, 248, 0.15);
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);
+    }
+    
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #9399f6 0%, #7c7ff2 100%);
+      box-shadow: 0 4px 15px rgba(129, 140, 248, 0.3);
+    }
+    
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+    
+    .stat-card {
+      background: linear-gradient(135deg, rgba(129, 140, 248, 0.05) 0%, rgba(99, 102, 241, 0.03) 100%);
+    }
+    
+    .nav-active {
+      background: rgba(129, 140, 248, 0.15);
+      border-left: 3px solid #818cf8;
+    }
+    
+    .nav-item:hover:not(.nav-active) {
+      background: #1f2937;
+    }
+  </style>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg: '#0f0f12',
+            bgSecondary: '#1a1a24',
+            bgCard: '#1f2937',
+            textPrimary: '#e5e7eb',
+            textSecondary: '#9ca3af',
+            accent: '#818cf8',
+            success: '#10b981',
+            warning: '#f59e0b',
+            platformWechat: '#07c160',
+            platformXiaohongshu: '#ff2442',
+            platformDouyin: '#000000'
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-bg text-textPrimary min-h-screen">
+  <div class="flex">
+    <!-- 侧边导航 -->
+    <aside class="w-64 fixed left-0 top-0 h-screen bg-bgSecondary border-r border-white/5 flex flex-col">
+      <!-- Logo -->
+      <div class="h-20 flex items-center px-6 border-b border-white/5">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-accent to-indigo-600 flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M9.05 10a1 1 0 0 1 1.7-.7l2.8 2.8a1 1 0 0 0 1.4 0l2.5-2.5a1 1 0 0 1 1.4 1.4l-3 3a1 1 0 0 1-.7.3H9a1 1 0 0 1-1-1v-3.3a1 1 0 0 1 .05-.3z"></path>
+          </svg>
+        </div>
+        <div class="ml-3">
+          <h1 class="text-white font-bold text-lg">AI运营助手</h1>
+          <p class="text-textSecondary text-xs">多平台智能运营</p>
+        </div>
+      </div>
+      
+      <!-- 导航菜单 -->
+      <nav class="flex-1 py-6 px-3">
+        <div class="space-y-1">
+          <button class="nav-item nav-active w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all duration-200">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+            <span class="text-sm font-medium">首页</span>
+          </button>
+          <button class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all duration-200 text-textSecondary hover:text-textPrimary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="13 2 3 14 12 14 12 22 21 10 12 10 12 2"></polygon>
+            </svg>
+            <span class="text-sm">内容生成</span>
+          </button>
+          <button class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all duration-200 text-textSecondary hover:text-textPrimary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <circle cx="8.5" cy="8.5" r="1.5"></circle>
+              <polyline points="21 15 16 10 5 21"></polyline>
+            </svg>
+            <span class="text-sm">素材管理</span>
+          </button>
+          <button class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all duration-200 text-textSecondary hover:text-textPrimary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            <span class="text-sm">一键推送</span>
+          </button>
+          <button class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all duration-200 text-textSecondary hover:text-textPrimary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            <span class="text-sm">历史记录</span>
+          </button>
+          <button class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all duration-200 text-textSecondary hover:text-textPrimary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            <span class="text-sm">系统设置</span>
+          </button>
+        </div>
+      </nav>
+      
+      <!-- 底部状态 -->
+      <div class="p-4 border-t border-white/5">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-success to-green-600 flex items-center justify-center">
+            <span class="text-xs font-bold text-white">AI</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm text-white font-medium truncate">DeepSeek AI</p>
+            <div class="flex items-center gap-1">
+              <span class="w-2 h-2 bg-success rounded-full"></span>
+              <span class="text-xs text-textSecondary">在线</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+    
+    <!-- 主内容区 -->
+    <main class="ml-64 min-h-screen">
+      <div class="p-8">
+        <!-- 标题区 -->
+        <div class="mb-8">
+          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div>
+              <h2 class="text-2xl font-bold text-white mb-2">欢迎回来！</h2>
+              <p class="text-textSecondary text-base">AI智能体已准备就绪，帮助您高效运营多平台账号</p>
+            </div>
+            <div class="flex gap-3">
+              <button class="btn-primary px-6 py-3 rounded-lg text-white font-medium flex items-center gap-2 transition-all duration-200 hover:scale-105">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="13 2 3 14 12 14 12 22 21 10 12 10 12 2"></polygon>
+                </svg>
+                开始生成内容
+              </button>
+              <button class="btn-secondary px-6 py-3 rounded-lg text-textPrimary font-medium flex items-center gap-2 transition-all duration-200 hover:scale-105">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                查看历史记录
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 数据统计区 -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div class="stat-card rounded-xl p-5 transition-all duration-300 hover-lift hover-glow">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-10 h-10 rounded-lg bg-accent/20 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                  <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+              </div>
+              <span class="text-textSecondary text-sm">生成内容</span>
+            </div>
+            <p class="text-3xl font-bold text-white">128</p>
+          </div>
+          
+          <div class="stat-card rounded-xl p-5 transition-all duration-300 hover-lift hover-glow">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+                </svg>
+              </div>
+              <span class="text-textSecondary text-sm">服务平台</span>
+            </div>
+            <p class="text-3xl font-bold text-white">3</p>
+          </div>
+          
+          <div class="stat-card rounded-xl p-5 transition-all duration-300 hover-lift hover-glow">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-10 h-10 rounded-lg bg-success/20 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+              </div>
+              <span class="text-textSecondary text-sm">成功推送</span>
+            </div>
+            <p class="text-3xl font-bold text-white">96</p>
+          </div>
+          
+          <div class="stat-card rounded-xl p-5 transition-all duration-300 hover-lift hover-glow">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-10 h-10 rounded-lg bg-warning/20 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                </svg>
+              </div>
+              <span class="text-textSecondary text-sm">效率提升</span>
+            </div>
+            <p class="text-3xl font-bold text-white">85%</p>
+          </div>
+        </div>
+        
+        <!-- 快捷操作区 -->
+        <div class="glass rounded-xl p-6 mb-8">
+          <h3 class="text-white font-semibold mb-4">快捷操作</h3>
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <button class="bg-bgCard rounded-xl p-5 flex flex-col items-center gap-3 transition-all duration-200 hover:bg-white/5 hover-lift">
+              <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-accent to-indigo-600 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="13 2 3 14 12 14 12 22 21 10 12 10 12 2"></polygon>
+                </svg>
+              </div>
+              <span class="text-white font-medium text-sm">AI内容生成</span>
+              <span class="text-textSecondary text-xs">智能改写文案</span>
+            </button>
+            
+            <button class="bg-bgCard rounded-xl p-5 flex flex-col items-center gap-3 transition-all duration-200 hover:bg-white/5 hover-lift">
+              <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-success to-teal-500 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                  <polyline points="21 15 16 10 5 21"></polyline>
+                </svg>
+              </div>
+              <span class="text-white font-medium text-sm">上传素材</span>
+              <span class="text-textSecondary text-xs">管理图片资源</span>
+            </button>
+            
+            <button class="bg-bgCard rounded-xl p-5 flex flex-col items-center gap-3 transition-all duration-200 hover:bg-white/5 hover-lift">
+              <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-warning to-orange-600 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+              </div>
+              <span class="text-white font-medium text-sm">一键推送</span>
+              <span class="text-textSecondary text-xs">多平台发布</span>
+            </button>
+            
+            <button class="bg-bgCard rounded-xl p-5 flex flex-col items-center gap-3 transition-all duration-200 hover:bg-white/5 hover-lift">
+              <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-accent to-purple-600 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+              </div>
+              <span class="text-white font-medium text-sm">查看历史</span>
+              <span class="text-textSecondary text-xs">内容存档记录</span>
+            </button>
+          </div>
+        </div>
+        
+        <!-- 平台数据区 -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div class="glass rounded-xl p-5 transition-all duration-200 hover-lift">
+            <div class="flex items-center gap-4 mb-5">
+              <div class="w-12 h-12 rounded-xl bg-platformWechat/20 flex items-center justify-center">
+                <span class="text-xl font-bold text-platformWechat">微</span>
+              </div>
+              <div>
+                <h4 class="text-white font-bold">微信公众号</h4>
+                <p class="text-textSecondary text-sm" style={{ lineHeight: '1.67' }}>已推送 42 篇</p>
+              </div>
+            </div>
+            <div class="h-2 bg-bgCard rounded-full overflow-hidden">
+              <div class="h-full w-3/4 rounded-full bg-platformWechat transition-all duration-500"></div>
+            </div>
+          </div>
+          
+          <div class="glass rounded-xl p-5 transition-all duration-200 hover-lift">
+            <div class="flex items-center gap-4 mb-5">
+              <div class="w-12 h-12 rounded-xl bg-platformXiaohongshu/20 flex items-center justify-center">
+                <span class="text-xl font-bold text-platformXiaohongshu">红</span>
+              </div>
+              <div>
+                <h4 class="text-white font-bold">小红书</h4>
+                <p class="text-textSecondary text-sm" style={{ lineHeight: '1.67' }}>已推送 38 篇</p>
+              </div>
+            </div>
+            <div class="h-2 bg-bgCard rounded-full overflow-hidden">
+              <div class="h-full w-5/6 rounded-full bg-platformXiaohongshu transition-all duration-500"></div>
+            </div>
+          </div>
+          
+          <div class="glass rounded-xl p-5 transition-all duration-200 hover-lift">
+            <div class="flex items-center gap-4 mb-5">
+              <div class="w-12 h-12 rounded-xl bg-gray-500/20 flex items-center justify-center">
+                <span class="text-xl font-bold text-gray-400">抖</span>
+              </div>
+              <div>
+                <h4 class="text-white font-bold">抖音</h4>
+                <p class="text-textSecondary text-sm" style={{ lineHeight: '1.67' }}>已推送 16 篇</p>
+              </div>
+            </div>
+            <div class="h-2 bg-bgCard rounded-full overflow-hidden">
+              <div class="h-full w-1/2 rounded-full bg-gray-500 transition-all duration-500"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
