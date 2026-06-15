@@ -18,20 +18,14 @@ DEEPSEEK_BASE_URL = "https://api.deepseek.com/v1"
 SERVER_HOST = os.getenv("SERVER_HOST", "0.0.0.0")
 SERVER_PORT = int(os.getenv("SERVER_PORT", "8000"))
 
-# SQL Server 数据库配置
-SQL_SERVER = os.getenv("SQL_SERVER", "localhost")
-SQL_PORT = os.getenv("SQL_PORT", "1433")
-SQL_DATABASE = os.getenv("SQL_DATABASE", "AI_Content_Platform")
-SQL_USERNAME = os.getenv("SQL_USERNAME", "sa")
-SQL_PASSWORD = os.getenv("SQL_PASSWORD", "")
+# MySQL 数据库配置（腾讯云）
+MYSQL_CONFIG = {
+    "host": os.getenv("MYSQL_HOST", "localhost"),
+    "port": int(os.getenv("MYSQL_PORT", "3306")),
+    "user": os.getenv("MYSQL_USERNAME", "root"),
+    "password": os.getenv("MYSQL_PASSWORD", ""),
+    "database": os.getenv("MYSQL_DATABASE", "ai_content_platform")
+}
 
-# SQL Server 连接字符串
-SQL_CONNECTION_STRING = (
-    f"DRIVER={{ODBC Driver 18 for SQL Server}};"
-    f"SERVER={SQL_SERVER},{SQL_PORT};"
-    f"DATABASE={SQL_DATABASE};"
-    f"UID={SQL_USERNAME};"
-    f"PWD={SQL_PASSWORD};"
-    f"TrustServerCertificate=yes;"
-    f"Encrypt=yes;"
-)
+# 向后兼容
+SQL_CONNECTION_STRING = None  # 已弃用，使用 MYSQL_CONFIG

@@ -12,10 +12,10 @@ from models import (
     PlatformContent
 )
 from ai_service import ai_service
-from storage_sqlserver import storage_service
+from storage_mysql import storage_service
 from datetime import datetime
 import uvicorn
-from config import SERVER_HOST, SERVER_PORT, DEEPSEEK_API_KEY, SQL_CONNECTION_STRING
+from config import SERVER_HOST, SERVER_PORT, DEEPSEEK_API_KEY
 
 # 创建FastAPI应用
 app = FastAPI(
@@ -40,7 +40,8 @@ async def root():
     # 检查数据库连接
     db_connected = False
     try:
-        storage_service._get_connection()
+        conn = storage_service._get_connection()
+        conn.close()
         db_connected = True
     except:
         pass
@@ -49,7 +50,8 @@ async def root():
         "service": "多平台账号自动化运营系统API",
         "status": "running",
         "ai_configured": DEEPSEEK_API_KEY != "sk-...",
-        "database": "SQL Server" if db_connected else "未连接"
+        "database": "MySQL (腾讯云)" if db_connected else "未连接",
+        "database_status": "已连接" if db_connected else "未连接"
     }
 
 
