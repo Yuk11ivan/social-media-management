@@ -12,10 +12,10 @@ from models import (
     PlatformContent
 )
 from ai_service import ai_service
-from storage import storage_service
+from storage_sqlserver import storage_service
 from datetime import datetime
 import uvicorn
-from config import SERVER_HOST, SERVER_PORT, DEEPSEEK_API_KEY
+from config import SERVER_HOST, SERVER_PORT, DEEPSEEK_API_KEY, SQL_CONNECTION_STRING
 
 # 创建FastAPI应用
 app = FastAPI(
@@ -37,10 +37,19 @@ app.add_middleware(
 @app.get("/")
 async def root():
     """根路径 - 服务状态"""
+    # 检查数据库连接
+    db_connected = False
+    try:
+        storage_service._get_connection()
+        db_connected = True
+    except:
+        pass
+
     return {
         "service": "多平台账号自动化运营系统API",
         "status": "running",
-        "ai_configured": DEEPSEEK_API_KEY != "sk-..."
+        "ai_configured": DEEPSEEK_API_KEY != "sk-...",
+        "database": "SQL Server" if db_connected else "未连接"
     }
 
 
@@ -128,26 +137,112 @@ async def delete_content(item_id: str):
     return {"message": "删除成功", "id": item_id}
 
 
+# ===== 推送日志接口 =====
+
+@app.get("/api/push/logs")
+async def get_push_logs(platform: str = None, status: str = None, limit: int = 50, offset: int = 0):
+    """
+    获取推送日志
+    """
+    try:
+        logs = storage_service.get_push_logs(platform=platform, status=status, limit=limit, offset=offset)
+        return {
+            "logs": logs,
+            "total": len(logs)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"获取推送日志失败: {str(e)}")
+
+
+# ===== 素材管理接口 =====
+
+@app.get("/api/materials")
+async def list_materials(file_type: str = None, platform: str = None, limit: int = 100, offset: int = 0):
+    """
+    获取素材列表
+    """
+    try:
+        materials = storage_service.list_materials(file_type=file_type, platform=platform, limit=limit, offset=offset)
+        return {
+            "materials": materials,
+            "total": len(materials)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"获取素材列表失败: {str(e)}")
+
+
+@app.post("/api/materials")
+async def save_material(name: str, file_path: str, file_type: str, platform: str = None, file_size: int = 0):
+    """
+    保存素材
+    """
+    try:
+        material_id = storage_service.save_material(name, file_path, file_type, platform, file_size)
+        return {
+            "id": material_id,
+            "message": "素材保存成功"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"保存素材失败: {str(e)}")
+
+
+@app.delete("/api/materials/{material_id}")
+async def delete_material(material_id: str):
+    """
+    删除素材
+    """
+    success = storage_service.delete_material(material_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="素材不存在")
+    return {"message": "删除成功", "id": material_id}
+
+
 @app.post("/api/platform/push")
-async def push_to_platform(platform: str, content: PlatformContent):
+async def push_to_platform(platform: str, content: PlatformContent, adapted_content_id: str = None):
     """
-    推送到平台草稿箱（Mock版本）
-    - 模拟推送成功
+    推送到平台草稿箱
     """
-    # Mock推送逻辑
     platform_names = {
         "wechat": "微信公众号",
         "xiaohongshu": "小红书",
         "douyin": "抖音"
     }
-    
-    return {
-        "success": True,
-        "message": f"已成功推送至{platform_names.get(platform, platform)}草稿箱",
-        "platform": platform,
-        "content_id": f"mock_{datetime.now().timestamp()}",
-        "note": "这是Mock模拟推送，真实推送需要对接平台API"
-    }
+
+    platform_name = platform_names.get(platform, platform)
+
+    try:
+        # TODO: 实际对接平台 API
+        # 目前返回模拟结果
+        content_id = f"mock_{datetime.now().timestamp()}"
+
+        # 记录推送日志
+        storage_service.log_push(
+            adapted_content_id=adapted_content_id,
+            platform=platform,
+            platform_name=platform_name,
+            status="success",
+            content_id=content_id,
+            message="Mock推送成功"
+        )
+
+        return {
+            "success": True,
+            "message": f"已成功推送至{platform_name}草稿箱",
+            "platform": platform,
+            "content_id": content_id,
+            "note": "这是Mock模拟推送，真实推送需要对接平台API"
+        }
+    except Exception as e:
+        # 记录失败日志
+        storage_service.log_push(
+            adapted_content_id=adapted_content_id,
+            platform=platform,
+            platform_name=platform_name,
+            status="failed",
+            message=str(e)
+        )
+
+        raise HTTPException(status_code=500, detail=f"推送失败: {str(e)}")
 
 
 if __name__ == "__main__":
