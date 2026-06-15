@@ -13,9 +13,14 @@ from models import (
 )
 from ai_service import ai_service
 from storage_mysql import storage_service
+from wechat_api import wechat_api, WechatAPIError
 from datetime import datetime
 import uvicorn
-from config import SERVER_HOST, SERVER_PORT, DEEPSEEK_API_KEY
+from config import (
+    SERVER_HOST, SERVER_PORT, DEEPSEEK_API_KEY,
+    WECHAT_APP_ID, WECHAT_APP_SECRET, WECHAT_DEFAULT_AUTHOR,
+    WECHAT_DEFAULT_THEME, WECHAT_NEED_OPEN_COMMENT, WECHAT_ONLY_FANS_CAN_COMMENT
+)
 
 # 创建FastAPI应用
 app = FastAPI(
@@ -203,48 +208,146 @@ async def delete_material(material_id: str):
 async def push_to_platform(platform: str, content: PlatformContent, adapted_content_id: str = None):
     """
     推送到平台草稿箱
+    - wechat: 对接微信公众号 API，发布到草稿箱
+    - xiaohongshu: 暂未对接
+    - douyin: 暂未对接
     """
     platform_names = {
         "wechat": "微信公众号",
         "xiaohongshu": "小红书",
         "douyin": "抖音"
     }
-
     platform_name = platform_names.get(platform, platform)
 
+    # 仅微信公众号支持真实 API 推送
+    if platform == "wechat":
+        try:
+            # 检查是否配置了微信 API 凭证
+            if not WECHAT_APP_ID or not WECHAT_APP_SECRET:
+                raise HTTPException(
+                    status_code=400,
+                    detail="微信公众号 API 未配置。请在 .env 中设置 WECHAT_APP_ID 和 WECHAT_APP_SECRET"
+                )
+
+            # 处理图片
+            body_images = []
+            if content.image:
+                body_images.append((content.image, "body_image.png"))
+
+            # 调用微信 API 发布
+            result = wechat_api.publish_article(
+                title=content.title,
+                content=content.content,
+                author=WECHAT_DEFAULT_AUTHOR,
+                digest=content.content[:100] + "..." if len(content.content) > 100 else content.content,
+                body_images_b64=body_images if body_images else None,
+                cover_image_b64=content.image,
+                theme=WECHAT_DEFAULT_THEME,
+                article_type="news",
+                need_open_comment=WECHAT_NEED_OPEN_COMMENT,
+                only_fans_can_comment=WECHAT_ONLY_FANS_CAN_COMMENT,
+            )
+
+            # 记录推送日志
+            storage_service.log_push(
+                adapted_content_id=adapted_content_id,
+                platform=platform,
+                platform_name=platform_name,
+                status="success",
+                content_id=result.get("media_id", ""),
+                message=f"已发布到微信公众号草稿箱，media_id: {result.get('media_id')}"
+            )
+
+            return {
+                "success": True,
+                "message": f"已成功推送至{platform_name}草稿箱",
+                "platform": platform,
+                "media_id": result.get("media_id"),
+                "detail": result
+            }
+
+        except WechatAPIError as e:
+            storage_service.log_push(
+                adapted_content_id=adapted_content_id,
+                platform=platform,
+                platform_name=platform_name,
+                status="failed",
+                message=f"微信API错误[{e.errcode}]: {e.errmsg}"
+            )
+            raise HTTPException(status_code=500, detail=f"微信推送失败: {e.errmsg}")
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            storage_service.log_push(
+                adapted_content_id=adapted_content_id,
+                platform=platform,
+                platform_name=platform_name,
+                status="failed",
+                message=str(e)
+            )
+            raise HTTPException(status_code=500, detail=f"推送失败: {str(e)}")
+
+    # 其他平台暂用模拟（Mock）
+    else:
+        try:
+            content_id = f"mock_{datetime.now().timestamp()}"
+            storage_service.log_push(
+                adapted_content_id=adapted_content_id,
+                platform=platform,
+                platform_name=platform_name,
+                status="success",
+                content_id=content_id,
+                message=f"Mock推送成功（{platform_name} API 待对接）"
+            )
+            return {
+                "success": True,
+                "message": f"已成功推送至{platform_name}草稿箱（Mock）",
+                "platform": platform,
+                "content_id": content_id,
+                "note": f"{platform_name}真实API待对接，当前为模拟推送"
+            }
+        except Exception as e:
+            storage_service.log_push(
+                adapted_content_id=adapted_content_id,
+                platform=platform,
+                platform_name=platform_name,
+                status="failed",
+                message=str(e)
+            )
+            raise HTTPException(status_code=500, detail=f"推送失败: {str(e)}")
+
+
+# ===== 微信配置检查接口 =====
+
+@app.get("/api/wechat/status")
+async def check_wechat_status():
+    """检查微信公众号 API 配置状态"""
+    return {
+        "configured": bool(WECHAT_APP_ID and WECHAT_APP_SECRET),
+        "app_id": WECHAT_APP_ID[:6] + "****" if WECHAT_APP_ID else "未配置",
+        "default_author": WECHAT_DEFAULT_AUTHOR,
+        "default_theme": WECHAT_DEFAULT_THEME,
+        "comment_open": bool(WECHAT_NEED_OPEN_COMMENT),
+        "only_fans_comment": bool(WECHAT_ONLY_FANS_CAN_COMMENT),
+    }
+
+
+@app.post("/api/wechat/test")
+async def test_wechat_api(title: str = "测试文章", content: str = "这是一篇测试内容"):
+    """测试微信 API 连接"""
+    if not WECHAT_APP_ID or not WECHAT_APP_SECRET:
+        raise HTTPException(status_code=400, detail="微信 API 未配置")
+
     try:
-        # TODO: 实际对接平台 API
-        # 目前返回模拟结果
-        content_id = f"mock_{datetime.now().timestamp()}"
-
-        # 记录推送日志
-        storage_service.log_push(
-            adapted_content_id=adapted_content_id,
-            platform=platform,
-            platform_name=platform_name,
-            status="success",
-            content_id=content_id,
-            message="Mock推送成功"
-        )
-
+        token = wechat_api.get_access_token()
         return {
             "success": True,
-            "message": f"已成功推送至{platform_name}草稿箱",
-            "platform": platform,
-            "content_id": content_id,
-            "note": "这是Mock模拟推送，真实推送需要对接平台API"
+            "message": "微信 API 连接正常",
+            "token_valid": bool(token)
         }
-    except Exception as e:
-        # 记录失败日志
-        storage_service.log_push(
-            adapted_content_id=adapted_content_id,
-            platform=platform,
-            platform_name=platform_name,
-            status="failed",
-            message=str(e)
-        )
-
-        raise HTTPException(status_code=500, detail=f"推送失败: {str(e)}")
+    except WechatAPIError as e:
+        raise HTTPException(status_code=500, detail=f"微信 API 连接失败: [{e.errcode}] {e.errmsg}")
 
 
 if __name__ == "__main__":

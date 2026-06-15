@@ -27,5 +27,13 @@ MYSQL_CONFIG = {
     "database": os.getenv("MYSQL_DATABASE", "ai_content_platform")
 }
 
-# 向后兼容
-SQL_CONNECTION_STRING = None  # 已弃用，使用 MYSQL_CONFIG
+# 微信公众号 API 配置
+WECHAT_APP_ID = os.getenv("WECHAT_APP_ID", "")
+WECHAT_APP_SECRET = os.getenv("WECHAT_APP_SECRET", "")
+WECHAT_ACCOUNT_ID = os.getenv("WECHAT_ACCOUNT_ID", "gh_38036387d074")
+
+# 微信发布偏好设置
+WECHAT_DEFAULT_AUTHOR = os.getenv("WECHAT_DEFAULT_AUTHOR", "娱乐八卦")
+WECHAT_NEED_OPEN_COMMENT = int(os.getenv("WECHAT_NEED_OPEN_COMMENT", "1"))
+WECHAT_ONLY_FANS_CAN_COMMENT = int(os.getenv("WECHAT_ONLY_FANS_CAN_COMMENT", "0"))
+WECHAT_DEFAULT_THEME = os.getenv("WECHAT_DEFAULT_THEME", "grace")
