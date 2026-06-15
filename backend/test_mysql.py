@@ -3,9 +3,12 @@ MySQL 数据库连接测试
 """
 import sys
 from pathlib import Path
+from dotenv import load_dotenv
+import os
 
-# 加载配置
-sys.path.insert(0, str(Path(__file__).parent))
+# 加载当前目录下的.env配置文件
+env_path = Path(__file__).parent / ".env"
+load_dotenv(dotenv_path=env_path)
 
 def test_connection():
     """测试数据库连接"""
@@ -14,9 +17,19 @@ def test_connection():
     print("=" * 50)
     print()
 
-    # 检查配置
+    # 从.env读取配置
     try:
-        from config import MYSQL_CONFIG
+        MYSQL_CONFIG = {
+            "host": os.getenv("DB_HOST"),
+            "port": int(os.getenv("DB_PORT")),
+            "user": os.getenv("DB_USER"),
+            "password": os.getenv("DB_PASSWORD"),
+            "database": os.getenv("DB_NAME")
+        }
+        # 校验配置是否读取完整
+        if not all(MYSQL_CONFIG.values()):
+            raise Exception(".env中数据库配置存在空值，请检查")
+
         print(f"数据库配置:")
         print(f"  主机: {MYSQL_CONFIG['host']}")
         print(f"  端口: {MYSQL_CONFIG['port']}")
@@ -25,7 +38,7 @@ def test_connection():
         print()
     except Exception as e:
         print(f"✗ 配置加载失败: {e}")
-        print("  请检查 config.py 或 .env 文件")
+        print("  请检查 .env 文件格式与内容")
         return False
 
     # 测试连接
@@ -81,7 +94,7 @@ def test_connection():
 
     except ImportError:
         print("✗ mysql-connector 未安装")
-        print("  请运行: pip install mysql-connector-python")
+        print("  请运行: py -m pip install mysql-connector-python")
         return False
     except Exception as e:
         print(f"✗ 连接失败: {e}")
