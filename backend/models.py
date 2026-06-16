@@ -26,6 +26,7 @@ class ContentGenerateRequest(BaseModel):
     """内容生成请求"""
     text: str
     image: Optional[str] = None
+    platforms: Optional[List[str]] = None
 
 
 class ContentGenerateResponse(BaseModel):

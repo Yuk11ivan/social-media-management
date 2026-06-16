@@ -11,3 +11,4 @@ dist/
 .idea/
 backend/__pycache__/
 *.egg-info/
+multi-platform-agnet/

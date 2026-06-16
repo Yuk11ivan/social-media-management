@@ -35,7 +35,8 @@ class MySQLStorageService:
             raise
 
     def save(self, original_text: str, original_image: str = None,
-             adapted_contents: list[PlatformContent] = None) -> ContentItem:
+             adapted_contents: list[PlatformContent] = None,
+             user_id: str = None) -> ContentItem:
         """保存内容"""
         item_id = str(uuid.uuid4())
         created_at = datetime.now()
@@ -45,9 +46,9 @@ class MySQLStorageService:
 
             # 插入主内容
             cursor.execute("""
-                INSERT INTO content_items (id, original_text, original_image, created_at)
-                VALUES (%s, %s, %s, %s)
-            """, (item_id, original_text, original_image, created_at))
+                INSERT INTO content_items (id, user_id, original_text, original_image, created_at)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (item_id, user_id, original_text, original_image, created_at))
 
             # 插入平台适配内容
             if adapted_contents:
@@ -74,16 +75,22 @@ class MySQLStorageService:
             created_at=created_at
         )
 
-    def get(self, item_id: str) -> Optional[ContentItem]:
+    def get(self, item_id: str, user_id: str = None) -> Optional[ContentItem]:
         """获取单个内容"""
         with self._get_connection() as conn:
             cursor = conn.cursor(dictionary=True)
 
             # 获取主内容
-            cursor.execute("""
-                SELECT id, original_text, original_image, created_at
-                FROM content_items WHERE id = %s
-            """, (item_id,))
+            if user_id:
+                cursor.execute("""
+                    SELECT id, original_text, original_image, created_at
+                    FROM content_items WHERE id = %s AND user_id = %s
+                """, (item_id, user_id))
+            else:
+                cursor.execute("""
+                    SELECT id, original_text, original_image, created_at
+                    FROM content_items WHERE id = %s
+                """, (item_id,))
 
             row = cursor.fetchone()
             if not row:
@@ -115,19 +122,27 @@ class MySQLStorageService:
                 adapted_contents=adapted_contents
             )
 
-    def list(self, limit: int = 20, offset: int = 0) -> list[ContentItem]:
+    def list(self, limit: int = 20, offset: int = 0, user_id: str = None) -> list[ContentItem]:
         """获取内容列表"""
         items = []
         with self._get_connection() as conn:
             cursor = conn.cursor(dictionary=True)
 
-            # 获取内容列表
-            cursor.execute("""
-                SELECT id, original_text, original_image, created_at
-                FROM content_items
-                ORDER BY created_at DESC
-                LIMIT %s OFFSET %s
-            """, (limit, offset))
+            if user_id:
+                cursor.execute("""
+                    SELECT id, original_text, original_image, created_at
+                    FROM content_items
+                    WHERE user_id = %s
+                    ORDER BY created_at DESC
+                    LIMIT %s OFFSET %s
+                """, (user_id, limit, offset))
+            else:
+                cursor.execute("""
+                    SELECT id, original_text, original_image, created_at
+                    FROM content_items
+                    ORDER BY created_at DESC
+                    LIMIT %s OFFSET %s
+                """, (limit, offset))
 
             for row in cursor.fetchall():
                 # 简化版，不加载适配内容
@@ -141,20 +156,25 @@ class MySQLStorageService:
 
         return items
 
-    def count(self) -> int:
+    def count(self, user_id: str = None) -> int:
         """获取总数"""
         with self._get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT COUNT(*) FROM content_items")
+            if user_id:
+                cursor.execute("SELECT COUNT(*) FROM content_items WHERE user_id = %s", (user_id,))
+            else:
+                cursor.execute("SELECT COUNT(*) FROM content_items")
             return cursor.fetchone()[0]
 
-    def delete(self, item_id: str) -> bool:
+    def delete(self, item_id: str, user_id: str = None) -> bool:
         """删除内容（级联删除适配内容）"""
         with self._get_connection() as conn:
             cursor = conn.cursor()
-            # 先删除适配内容
+            if user_id:
+                cursor.execute("SELECT id FROM content_items WHERE id = %s AND user_id = %s", (item_id, user_id))
+                if not cursor.fetchone():
+                    return False
             cursor.execute("DELETE FROM adapted_contents WHERE item_id = %s", (item_id,))
-            # 再删除主内容
             cursor.execute("DELETE FROM content_items WHERE id = %s", (item_id,))
             conn.commit()
             return cursor.rowcount > 0
@@ -162,22 +182,23 @@ class MySQLStorageService:
     # ===== 推送日志 =====
 
     def log_push(self, adapted_content_id: str, platform: str, platform_name: str,
-                 status: str, content_id: str = None, message: str = None) -> str:
+                 status: str, content_id: str = None, message: str = None,
+                 user_id: str = None) -> str:
         """记录推送日志"""
         log_id = str(uuid.uuid4())
 
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                INSERT INTO push_logs (id, adapted_content_id, platform, platform_name, status, content_id, message)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """, (log_id, adapted_content_id, platform, platform_name, status, content_id, message))
+                INSERT INTO push_logs (id, user_id, adapted_content_id, platform, platform_name, status, content_id, message)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """, (log_id, user_id, adapted_content_id, platform, platform_name, status, content_id, message))
             conn.commit()
 
         return log_id
 
     def get_push_logs(self, platform: str = None, status: str = None,
-                      limit: int = 50, offset: int = 0) -> list:
+                      limit: int = 50, offset: int = 0, user_id: str = None) -> list:
         """获取推送日志"""
         logs = []
         with self._get_connection() as conn:
@@ -189,6 +210,10 @@ class MySQLStorageService:
                 WHERE 1=1
             """
             params = []
+
+            if user_id:
+                query += " AND user_id = %s"
+                params.append(user_id)
 
             if platform:
                 query += " AND platform = %s"
@@ -349,8 +374,144 @@ class MySQLStorageService:
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
             """)
 
+            self._init_auth_tables(cursor)
+
             conn.commit()
-            print("✓ 数据库表创建成功")
+            print("[OK] database tables initialized")
+
+    def _ensure_column(self, cursor, table: str, column: str, definition: str):
+        cursor.execute("""
+            SELECT COUNT(*) FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s AND COLUMN_NAME = %s
+        """, (table, column))
+        if cursor.fetchone()[0] == 0:
+            cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+
+    # ===== 用户与平台绑定 =====
+
+    def create_user(self, email: str, password_hash: str,
+                    nickname: str = None, phone: str = None) -> dict:
+        user_id = str(uuid.uuid4())
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO users (id, email, phone, password_hash, nickname)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (user_id, email, phone, password_hash, nickname))
+            conn.commit()
+        return self.get_user_by_id(user_id)
+
+    def get_user_by_id(self, user_id: str) -> Optional[dict]:
+        with self._get_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("""
+                SELECT id, email, phone, password_hash, nickname, status, created_at
+                FROM users WHERE id = %s
+            """, (user_id,))
+            return cursor.fetchone()
+
+    def get_user_by_email(self, email: str) -> Optional[dict]:
+        with self._get_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("""
+                SELECT id, email, phone, password_hash, nickname, status, created_at
+                FROM users WHERE email = %s
+            """, (email,))
+            return cursor.fetchone()
+
+    def get_user_by_phone(self, phone: str) -> Optional[dict]:
+        with self._get_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("""
+                SELECT id, email, phone, password_hash, nickname, status, created_at
+                FROM users WHERE phone = %s
+            """, (phone,))
+            return cursor.fetchone()
+
+    def upsert_platform_account(self, user_id: str, platform: str, app_id: str,
+                                app_secret_enc: str, account_id: str = None,
+                                account_name: str = None) -> dict:
+        account_id_val = str(uuid.uuid4())
+        with self._get_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("""
+                SELECT id FROM platform_accounts
+                WHERE user_id = %s AND platform = %s
+            """, (user_id, platform))
+            existing = cursor.fetchone()
+
+            if existing:
+                cursor.execute("""
+                    UPDATE platform_accounts
+                    SET app_id = %s, app_secret_enc = %s, account_id = %s,
+                        account_name = %s, status = 1, updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s
+                """, (app_id, app_secret_enc, account_id, account_name, existing["id"]))
+                account_id_val = existing["id"]
+            else:
+                cursor.execute("""
+                    INSERT INTO platform_accounts
+                    (id, user_id, platform, app_id, app_secret_enc, account_id, account_name)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """, (account_id_val, user_id, platform, app_id, app_secret_enc, account_id, account_name))
+            conn.commit()
+
+        return self.get_platform_account(user_id, platform)
+
+    def get_platform_account(self, user_id: str, platform: str) -> Optional[dict]:
+        with self._get_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("""
+                SELECT id, user_id, platform, account_name, app_id, app_secret_enc,
+                       account_id, status, created_at, updated_at
+                FROM platform_accounts
+                WHERE user_id = %s AND platform = %s AND status = 1
+            """, (user_id, platform))
+            return cursor.fetchone()
+
+    def delete_platform_account(self, user_id: str, platform: str) -> bool:
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                DELETE FROM platform_accounts
+                WHERE user_id = %s AND platform = %s
+            """, (user_id, platform))
+            conn.commit()
+            return cursor.rowcount > 0
+
+    def _init_auth_tables(self, cursor):
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id VARCHAR(36) PRIMARY KEY,
+                email VARCHAR(255) NOT NULL UNIQUE,
+                phone VARCHAR(20) UNIQUE,
+                password_hash VARCHAR(255) NOT NULL,
+                nickname VARCHAR(100),
+                status TINYINT DEFAULT 1,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """)
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS platform_accounts (
+                id VARCHAR(36) PRIMARY KEY,
+                user_id VARCHAR(36) NOT NULL,
+                platform VARCHAR(50) NOT NULL,
+                account_name VARCHAR(100),
+                app_id VARCHAR(100) NOT NULL,
+                app_secret_enc TEXT NOT NULL,
+                account_id VARCHAR(100),
+                status TINYINT DEFAULT 1,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                UNIQUE KEY uk_user_platform (user_id, platform),
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """)
+
+        self._ensure_column(cursor, "content_items", "user_id", "VARCHAR(36) NULL")
+        self._ensure_column(cursor, "push_logs", "user_id", "VARCHAR(36) NULL")
 
 
 # 全局存储服务实例

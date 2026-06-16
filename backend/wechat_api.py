@@ -86,16 +86,17 @@ class WechatAPI:
         上传封面/素材图片（material/add_material）
         返回 media_id
         """
-        self._ensure_token()
-        url = f"{UPLOAD_MATERIAL_URL}?type=image&access_token={self._access_token}"
-
         abs_path = Path(image_path).resolve()
         if not abs_path.exists():
             raise FileNotFoundError(f"封面图不存在: {image_path}")
 
         with open(abs_path, "rb") as f:
-            files = {"media": (abs_path.name, f, self._guess_content_type(str(abs_path)))}
-            resp = self._client.post(url, files=files)
+            image_data = self._normalize_cover_bytes(f.read())
+
+        self._ensure_token()
+        url = f"{UPLOAD_MATERIAL_URL}?type=image&access_token={self._access_token}"
+        files = {"media": ("cover.jpg", image_data, "image/jpeg")}
+        resp = self._client.post(url, files=files)
 
         data = resp.json()
         if "errcode" in data and data["errcode"] != 0:
@@ -127,9 +128,9 @@ class WechatAPI:
 
         return self._ensure_https(data["url"])
 
-    def upload_base64_cover(self, image_b64: str, filename: str = "cover.png") -> str:
+    def upload_base64_cover(self, image_b64: str, filename: str = "cover.jpg") -> str:
         """
-        上传 Base64 编码的图片作为封面素材
+        上传 Base64 编码的图片作为封面素材（自动裁剪为微信要求比例）
         返回 media_id
         """
         self._ensure_token()
@@ -138,10 +139,8 @@ class WechatAPI:
         if "," in image_b64:
             image_b64 = image_b64.split(",", 1)[1]
 
-        image_data = base64.b64decode(image_b64)
-        content_type = "image/png" if filename.endswith(".png") else "image/jpeg"
-
-        files = {"media": (filename, image_data, content_type)}
+        image_data = self._normalize_cover_bytes(base64.b64decode(image_b64))
+        files = {"media": ("cover.jpg", image_data, "image/jpeg")}
         resp = self._client.post(url, files=files)
 
         data = resp.json()
@@ -538,30 +537,61 @@ class WechatAPI:
             "article_type": article_type,
         }
 
+    def _normalize_cover_bytes(self, image_data: bytes) -> bytes:
+        """将封面图裁剪为微信公众号要求的 900×383（约 2.35:1）"""
+        import io
+        from PIL import Image
+
+        img = Image.open(io.BytesIO(image_data))
+        if img.mode == "RGBA":
+            background = Image.new("RGB", img.size, (255, 255, 255))
+            background.paste(img, mask=img.split()[3])
+            img = background
+        elif img.mode != "RGB":
+            img = img.convert("RGB")
+
+        target_w, target_h = 900, 383
+        w, h = img.size
+        target_ratio = target_w / target_h
+        current_ratio = w / h
+
+        if current_ratio > target_ratio:
+            new_w = int(h * target_ratio)
+            left = (w - new_w) // 2
+            img = img.crop((left, 0, left + new_w, h))
+        else:
+            new_h = int(w / target_ratio)
+            top = (h - new_h) // 2
+            img = img.crop((0, top, w, top + new_h))
+
+        img = img.resize((target_w, target_h), Image.Resampling.LANCZOS)
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=88)
+        return buf.getvalue()
+
     def _create_placeholder_cover(self, title: str) -> str:
-        """创建一个简单的纯色占位封面图（1x1 PNG）"""
-        import struct
-        import zlib
+        """创建符合微信比例要求的占位封面图"""
+        import io
+        from PIL import Image, ImageDraw, ImageFont
 
-        # 生成一个极小 PNG（1x1 粉色像素）
-        def create_png(width=1, height=1, r=220, g=100, b=140):
-            def chunk(chunk_type, data):
-                c = chunk_type + data
-                crc = struct.pack(">I", zlib.crc32(c) & 0xFFFFFFFF)
-                return struct.pack(">I", len(data)) + c + crc
+        width, height = 900, 383
+        img = Image.new("RGB", (width, height), (16, 185, 129))
+        draw = ImageDraw.Draw(img)
 
-            header = b"\x89PNG\r\n\x1a\n"
-            ihdr = chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0))
-            raw = b""
-            for y in range(height):
-                raw += b"\x00" + bytes([r, g, b]) * width
-            idat = chunk(b"IDAT", zlib.compress(raw))
-            iend = chunk(b"IEND", b"")
-            return header + ihdr + idat + iend
+        text = (title or "AI 运营工坊")[:20]
+        try:
+            font = ImageFont.truetype("msyh.ttc", 42)
+        except Exception:
+            font = ImageFont.load_default()
 
-        png_data = create_png()
-        png_b64 = base64.b64encode(png_data).decode("utf-8")
-        return self.upload_base64_cover(png_b64, "cover_placeholder.png")
+        bbox = draw.textbbox((0, 0), text, font=font)
+        tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+        draw.text(((width - tw) // 2, (height - th) // 2), text, fill=(255, 255, 255), font=font)
+
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=88)
+        png_b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
+        return self.upload_base64_cover(png_b64, "cover_placeholder.jpg")
 
     # ========== 工具方法 ==========
 

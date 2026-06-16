@@ -906,6 +906,151 @@
       0%, 100% { opacity: 1; }
       50% { opacity: 0.7; }
     }
+
+    /* === Account / Auth === */
+    .auth-page-wrap {
+      max-width: 520px;
+      margin-top: 1.5rem;
+    }
+    .auth-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 1.25rem;
+      padding: 1.75rem;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+      color: var(--text-primary);
+    }
+    .auth-card h3 {
+      margin-bottom: 1rem;
+      font-size: 1.15rem;
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+    .auth-card .auth-hint {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-bottom: 1.25rem;
+      line-height: 1.6;
+    }
+    .auth-field { margin-bottom: 1rem; }
+    .auth-field label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 0.4rem;
+    }
+    .auth-field input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border-radius: 0.75rem;
+      border: 1px solid var(--border);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: 0.95rem;
+    }
+    .auth-field input::placeholder {
+      color: var(--text-muted);
+    }
+    .auth-field input:focus {
+      outline: none;
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 3px var(--accent-light);
+    }
+    .auth-status {
+      margin-top: 1rem;
+      padding: 0.75rem 1rem;
+      border-radius: 0.75rem;
+      background: var(--bg-secondary);
+      font-size: 0.9rem;
+      line-height: 1.5;
+      color: var(--text-secondary);
+    }
+    .auth-actions {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+    .btn-secondary {
+      padding: 0.75rem 1.25rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .btn-secondary:hover {
+      background: var(--bg-secondary);
+      border-color: #ccc;
+    }
+    .auth-link-row {
+      margin-top: 1.25rem;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+    .auth-link-row a {
+      color: var(--accent-dark);
+      font-weight: 500;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .auth-link-row a:hover {
+      text-decoration: underline;
+    }
+
+    /* === Image Upload === */
+    .image-upload-zone {
+      margin: 1.25rem 0;
+      padding: 1.25rem;
+      border: 2px dashed var(--border);
+      border-radius: 1rem;
+      background: var(--bg-primary);
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .image-upload-zone:hover {
+      border-color: var(--accent-primary);
+      background: var(--accent-light);
+    }
+    .image-upload-zone.has-image {
+      border-style: solid;
+      cursor: default;
+      text-align: left;
+    }
+    .image-upload-hint {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-top: 0.35rem;
+    }
+    .image-preview-wrap {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .image-preview-wrap img {
+      max-width: 280px;
+      max-height: 160px;
+      border-radius: 0.75rem;
+      object-fit: cover;
+      border: 1px solid var(--border);
+    }
+    .image-preview-meta {
+      flex: 1;
+      min-width: 180px;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+    .image-preview-meta strong {
+      color: var(--text-primary);
+      display: block;
+      margin-bottom: 0.25rem;
+    }
   </style>
 </head>
 <body>
@@ -930,8 +1075,10 @@
         <a href="#" class="nav-link" data-page="material"><span>素材管理</span></a>
         <a href="#" class="nav-link" data-page="push"><span>推送</span></a>
         <a href="#" class="nav-link" data-page="history"><span>历史</span></a>
+        <a href="#" class="nav-link" data-page="account"><span>登录</span></a>
+        <a href="#" class="nav-link" data-page="wechat"><span>微信绑定</span></a>
       </div>
-      <div class="user-avatar">AI</div>
+      <div class="user-avatar" id="user-avatar" onclick="showPage('account')" title="账号设置">AI</div>
     </div>
   </nav>
 
@@ -941,7 +1088,7 @@
       <div class="hero">
         <div class="hero-left">
           <h1>让内容<br/>流动起来</h1>
-          <p>AI 智能体为你跨越平台界限，一键生成多平台适配内容，释放创意的无限可能。</p>
+          <p>AI 智能改写内容，一键推送到微信公众号草稿箱。</p>
           <button class="btn-primary" onclick="showPage('generate')">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 12 22 21 10 12 10 12 2"/></svg>
             开始创作
@@ -953,7 +1100,7 @@
             <div class="stat-label">生成内容</div>
           </div>
           <div class="stat-card">
-            <div class="stat-value" data-count="3">0</div>
+            <div class="stat-value" data-count="1">0</div>
             <div class="stat-label">服务平台</div>
           </div>
           <div class="stat-card">
@@ -978,7 +1125,7 @@
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"><polygon points="13 2 3 14 12 14 12 22 21 10 12 10 12 2"/></svg>
             </div>
             <div class="action-title">AI 内容生成</div>
-            <div class="action-desc">智能改写，跨平台适配</div>
+            <div class="action-desc">改写为微信公众号文章</div>
           </div>
         </div>
         <div class="action-card liquid-shimmer" onclick="showPage('material')">
@@ -996,7 +1143,7 @@
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
             </div>
             <div class="action-title">一键推送</div>
-            <div class="action-desc">多平台发布，瞬间触达</div>
+            <div class="action-desc">推送到微信公众号草稿箱</div>
           </div>
         </div>
         <div class="action-card liquid-shimmer" onclick="showPage('history')">
@@ -1011,45 +1158,17 @@
       </div>
 
       <div class="platform-cards">
-        <div class="platform-card liquid-shimmer">
+        <div class="platform-card liquid-shimmer" onclick="showPage('wechat')" style="cursor:pointer;">
           <div class="liquid-shimmer-inner" style="padding: 1.5rem; border-radius: 1.5rem;">
             <div class="platform-header">
               <div class="platform-icon wechat">微</div>
               <div class="platform-info">
                 <h4>微信公众号</h4>
-                <p>已推送 42 篇</p>
+                <p id="home-wechat-status">点击配置绑定状态</p>
               </div>
             </div>
             <div class="platform-progress">
-              <div class="platform-progress-bar" style="width: 75%; background: var(--accent-primary);"></div>
-            </div>
-          </div>
-        </div>
-        <div class="platform-card liquid-shimmer">
-          <div class="liquid-shimmer-inner" style="padding: 1.5rem; border-radius: 1.5rem;">
-            <div class="platform-header">
-              <div class="platform-icon xiaohongshu">红</div>
-              <div class="platform-info">
-                <h4>小红书</h4>
-                <p>已推送 38 篇</p>
-              </div>
-            </div>
-            <div class="platform-progress">
-              <div class="platform-progress-bar" style="width: 85%; background: #dc2626;"></div>
-            </div>
-          </div>
-        </div>
-        <div class="platform-card liquid-shimmer">
-          <div class="liquid-shimmer-inner" style="padding: 1.5rem; border-radius: 1.5rem;">
-            <div class="platform-header">
-              <div class="platform-icon douyin">抖</div>
-              <div class="platform-info">
-                <h4>抖音</h4>
-                <p>已推送 16 篇</p>
-              </div>
-            </div>
-            <div class="platform-progress">
-              <div class="platform-progress-bar" style="width: 50%; background: #6b7280;"></div>
+              <div class="platform-progress-bar" style="width: 100%; background: var(--accent-primary);"></div>
             </div>
           </div>
         </div>
@@ -1060,7 +1179,11 @@
     <div id="page-generate" class="page">
       <div class="page-header">
         <h1>内容生成</h1>
-        <p>输入你的想法，AI 将为每个平台定制专属内容</p>
+        <p>输入素材，AI 改写为微信公众号文章</p>
+      </div>
+
+      <div class="auth-status" id="generate-flow-status" style="margin-bottom:1rem;">
+        使用流程：登录 → 微信绑定 → 生成内容 → 推送到草稿箱
       </div>
 
       <div class="input-area">
@@ -1071,10 +1194,18 @@
               <div class="char-count"><span id="char-current">0</span> 字</div>
             </div>
 
+            <div class="image-upload-zone" id="image-upload-zone" onclick="triggerImageSelect()">
+              <input type="file" id="image-input" accept="image/jpeg,image/png,image/gif,image/webp" hidden onchange="handleImageSelect(event)">
+              <div id="image-upload-empty">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--accent-primary);margin-bottom:0.5rem;"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <div style="font-weight:500;color:var(--text-primary);">点击上传配图（可选）</div>
+                <div class="image-upload-hint">支持 JPG / PNG / GIF / WebP，最大 5MB。图片不参与 AI 改写，推送时作为封面和正文配图。</div>
+              </div>
+              <div id="image-upload-preview" class="image-preview-wrap" style="display:none;"></div>
+            </div>
+
             <div class="platform-select">
               <div class="platform-option selected" data-platform="wechat">微信公众号</div>
-              <div class="platform-option selected" data-platform="xiaohongshu">小红书</div>
-              <div class="platform-option selected" data-platform="douyin">抖音</div>
             </div>
 
             <div style="display: flex; gap: 1rem;">
@@ -1097,13 +1228,13 @@
           <!-- Results will be injected here -->
         </div>
         <div style="display: flex; gap: 1rem; margin-top: 2rem;">
-          <button class="btn-primary">
+          <button class="btn-primary" id="btn-push-wechat">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-            一键推送到平台
+            推送到微信公众号草稿箱
           </button>
-          <button class="btn-secondary">
+          <button class="btn-secondary" id="btn-save-content">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
-            保存到草稿
+            保存到数据库
           </button>
         </div>
       </div>
@@ -1249,71 +1380,21 @@
     <!-- Push Page -->
     <div id="page-push" class="page">
       <div class="page-header">
-        <h1>一键推送</h1>
-        <p>将生成的内容推送到各平台草稿箱</p>
+        <h1>推送记录</h1>
+        <p>查看待推送内容与微信公众号推送日志</p>
       </div>
 
       <div class="push-section">
         <h3>待推送内容</h3>
-        <div class="push-item">
-          <input type="checkbox" class="push-checkbox">
-          <div class="push-content">
-            <div class="push-title">智能AI助手：提升工作效率的秘密武器</div>
-            <div class="push-time">生成于 2024-01-15 14:30</div>
-          </div>
-          <div class="push-platforms">
-            <span class="platform-badge wechat">微信公众号</span>
-            <span class="platform-badge xiaohongshu">小红书</span>
-          </div>
-          <button class="push-btn">推送</button>
-        </div>
-        <div class="push-item">
-          <input type="checkbox" class="push-checkbox">
-          <div class="push-content">
-            <div class="push-title">2024年度工作总结报告</div>
-            <div class="push-time">生成于 2024-01-14 10:15</div>
-          </div>
-          <div class="push-platforms">
-            <span class="platform-badge wechat">微信公众号</span>
-          </div>
-          <button class="push-btn">推送</button>
-        </div>
-        <div class="push-item">
-          <input type="checkbox" class="push-checkbox">
-          <div class="push-content">
-            <div class="push-title">新品发布预告：智能穿戴设备</div>
-            <div class="push-time">生成于 2024-01-13 16:45</div>
-          </div>
-          <div class="push-platforms">
-            <span class="platform-badge xiaohongshu">小红书</span>
-            <span class="platform-badge douyin">抖音</span>
-          </div>
-          <button class="push-btn">推送</button>
+        <div id="push-pending-list">
+          <div class="auth-status">暂无待推送内容，请先在「内容生成」页面生成文章</div>
         </div>
       </div>
 
       <div class="push-section">
-        <h3>推送日志</h3>
-        <div class="log-item">
-          <div class="log-status success"></div>
-          <div class="log-content">
-            <div class="log-title">智能AI助手：提升工作效率的秘密武器</div>
-            <div class="log-message">推送至 微信公众号 成功 - 2024-01-15 14:32</div>
-          </div>
-        </div>
-        <div class="log-item">
-          <div class="log-status success"></div>
-          <div class="log-content">
-            <div class="log-title">2024年度工作总结报告</div>
-            <div class="log-message">推送至 微信公众号 成功 - 2024-01-14 10:20</div>
-          </div>
-        </div>
-        <div class="log-item">
-          <div class="log-status warning"></div>
-          <div class="log-content">
-            <div class="log-title">新品发布预告：智能穿戴设备</div>
-            <div class="log-message">推送至 抖音 失败 - 2024-01-13 16:50</div>
-          </div>
+        <h3>微信公众号推送日志</h3>
+        <div id="push-logs-list">
+          <div class="auth-status">加载中...</div>
         </div>
       </div>
     </div>
@@ -1403,14 +1484,359 @@
         </div>
       </div>
     </div>
+
+    <!-- Account Page: Login / Register -->
+    <div id="page-account" class="page">
+      <div class="page-header">
+        <h1>平台登录 / 注册</h1>
+        <p>第一层：使用邮箱注册并登录本平台</p>
+      </div>
+
+      <div class="auth-page-wrap">
+        <div class="auth-card">
+          <h3>账号信息</h3>
+          <div class="auth-field">
+            <label>邮箱</label>
+            <input type="email" id="auth-email" placeholder="you@example.com">
+          </div>
+          <div class="auth-field">
+            <label>密码（至少 6 位）</label>
+            <input type="password" id="auth-password" placeholder="请输入密码">
+          </div>
+          <div class="auth-field">
+            <label>昵称（注册时可选）</label>
+            <input type="text" id="auth-nickname" placeholder="显示名称">
+          </div>
+          <div class="auth-actions">
+            <button class="btn-primary" onclick="handleLogin()">登录</button>
+            <button class="btn-secondary" onclick="handleRegister()">注册</button>
+            <button class="btn-secondary" onclick="handleLogout()">退出</button>
+          </div>
+          <div class="auth-status" id="auth-user-status">当前状态：未登录</div>
+          <div class="auth-link-row">
+            登录后，前往 <a onclick="showPage('wechat')">微信绑定</a> 配置公众号发布权限
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WeChat Bind Page -->
+    <div id="page-wechat" class="page">
+      <div class="page-header">
+        <h1>绑定微信公众号</h1>
+        <p>第二层：配置 AppID 与 AppSecret，获取草稿箱发布权限</p>
+      </div>
+
+      <div class="auth-page-wrap">
+        <div class="auth-card">
+          <h3>公众号 API 凭证</h3>
+          <p class="auth-hint">
+            在微信公众平台 → 设置与开发 → 基本配置 获取 AppID 和 AppSecret，并将服务器公网 IP 加入白名单。
+          </p>
+          <div class="auth-field">
+            <label>AppID</label>
+            <input type="text" id="wechat-app-id" placeholder="wx...">
+          </div>
+          <div class="auth-field">
+            <label>AppSecret</label>
+            <input type="password" id="wechat-app-secret" placeholder="请输入 AppSecret">
+          </div>
+          <div class="auth-field">
+            <label>公众号原始 ID（可选）</label>
+            <input type="text" id="wechat-account-id" placeholder="gh_...">
+          </div>
+          <div class="auth-field">
+            <label>公众号名称（可选）</label>
+            <input type="text" id="wechat-account-name" placeholder="我的公众号">
+          </div>
+          <div class="auth-actions">
+            <button class="btn-primary" onclick="handleBindWechat()">绑定并验证</button>
+            <button class="btn-secondary" onclick="testWechatConnection()">测试连接</button>
+            <button class="btn-secondary" onclick="unbindWechat()">解绑</button>
+          </div>
+          <div class="auth-status" id="wechat-bind-status">微信绑定状态：请先登录</div>
+          <div class="auth-link-row">
+            尚未登录？请先 <a onclick="showPage('account')">登录平台账号</a>
+          </div>
+        </div>
+      </div>
+    </div>
   </main>
 
   <script>
     // === API 配置 ===
     const API_BASE = 'http://localhost:8000';
+    const TOKEN_KEY = 'platform_access_token';
+    const ACTIVE_PLATFORM = 'wechat';
     let currentResults = [];
+    let currentImage = null; // data URL，不参与 AI 生成，仅用于推送
 
-    // === Page Navigation ===
+    function getToken() { return localStorage.getItem(TOKEN_KEY); }
+    function setToken(token) { localStorage.setItem(TOKEN_KEY, token); }
+    function clearToken() { localStorage.removeItem(TOKEN_KEY); updateAuthUI(); }
+
+    async function ensureLoggedIn() {
+      if (!getToken()) {
+        alert('请先登录平台账号');
+        showPage('account');
+        return false;
+      }
+      return true;
+    }
+
+    async function ensureWechatBound() {
+      if (!await ensureLoggedIn()) return false;
+      try {
+        const resp = await apiFetch(API_BASE + '/api/platforms/wechat/status');
+        const data = await resp.json();
+        if (!data.bound) {
+          alert('请先在「微信绑定」页面配置 AppID 和 AppSecret');
+          showPage('wechat');
+          return false;
+        }
+        if (!data.connected) {
+          alert('微信公众号已绑定但连接失败：' + (data.message || '请检查 IP 白名单'));
+          showPage('wechat');
+          return false;
+        }
+        return true;
+      } catch (e) {
+        alert('无法验证微信绑定状态：' + e.message);
+        return false;
+      }
+    }
+
+    function updateGenerateFlowStatus() {
+      const el = document.getElementById('generate-flow-status');
+      if (!el) return;
+      if (!getToken()) {
+        el.textContent = '当前未登录 → 请先到「登录」页面注册/登录';
+        return;
+      }
+      el.textContent = '已登录。推送前请确认已在「微信绑定」页面完成配置';
+    }
+
+    async function updateHomeWechatStatus() {
+      const el = document.getElementById('home-wechat-status');
+      if (!el) return;
+      if (!getToken()) {
+        el.textContent = '未登录，点击前往绑定';
+        return;
+      }
+      try {
+        const resp = await fetch(API_BASE + '/api/platforms/wechat/status', { headers: authHeaders() });
+        if (!resp.ok) throw new Error();
+        const data = await resp.json();
+        if (!data.bound) el.textContent = '未绑定微信公众号';
+        else if (data.connected) el.textContent = '已绑定，连接正常';
+        else el.textContent = '已绑定，连接异常';
+      } catch (e) {
+        el.textContent = '点击查看绑定状态';
+      }
+    }
+
+    function authHeaders(extra = {}) {
+      const headers = { ...extra };
+      const token = getToken();
+      if (token) headers['Authorization'] = 'Bearer ' + token;
+      return headers;
+    }
+
+    async function apiFetch(url, options = {}) {
+      const resp = await fetch(url, {
+        ...options,
+        headers: authHeaders(options.headers || {})
+      });
+      if (resp.status === 401) {
+        clearToken();
+        showPage('account');
+        throw new Error('请先登录');
+      }
+      return resp;
+    }
+
+    async function updateAuthUI() {
+      const statusEl = document.getElementById('auth-user-status');
+      const wechatStatusEl = document.getElementById('wechat-bind-status');
+      const avatarEl = document.getElementById('user-avatar');
+      const token = getToken();
+      if (!token) {
+        if (statusEl) statusEl.textContent = '当前状态：未登录';
+        if (wechatStatusEl) wechatStatusEl.textContent = '微信绑定状态：请先登录';
+        if (avatarEl) avatarEl.textContent = 'AI';
+        updateGenerateFlowStatus();
+        updateHomeWechatStatus();
+        return;
+      }
+      try {
+        const resp = await fetch(API_BASE + '/api/auth/me', { headers: authHeaders() });
+        if (!resp.ok) throw new Error('登录已过期');
+        const user = await resp.json();
+        if (statusEl) statusEl.textContent = `当前状态：已登录（${user.nickname || user.email}）`;
+        if (avatarEl) avatarEl.textContent = (user.nickname || user.email || 'U').slice(0, 1).toUpperCase();
+        await loadWechatStatus();
+        updateGenerateFlowStatus();
+        updateHomeWechatStatus();
+      } catch (e) { clearToken(); }
+    }
+
+    async function handleRegister() {
+      const email = document.getElementById('auth-email').value.trim();
+      const password = document.getElementById('auth-password').value;
+      const nickname = document.getElementById('auth-nickname').value.trim();
+      if (!email || !password) return alert('请填写邮箱和密码');
+      const resp = await fetch(API_BASE + '/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, nickname: nickname || null })
+      });
+      const data = await resp.json();
+      if (!resp.ok) return alert(data.detail || '注册失败');
+      setToken(data.access_token);
+      await updateAuthUI();
+      alert('注册成功，已自动登录');
+    }
+
+    async function handleLogin() {
+      const email = document.getElementById('auth-email').value.trim();
+      const password = document.getElementById('auth-password').value;
+      if (!email || !password) return alert('请填写邮箱和密码');
+      const resp = await fetch(API_BASE + '/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await resp.json();
+      if (!resp.ok) return alert(data.detail || '登录失败');
+      setToken(data.access_token);
+      await updateAuthUI();
+      alert('登录成功');
+    }
+
+    function handleLogout() { clearToken(); alert('已退出登录'); }
+
+    async function handleBindWechat() {
+      if (!getToken()) return alert('请先登录平台账号');
+      const app_id = document.getElementById('wechat-app-id').value.trim();
+      const app_secret = document.getElementById('wechat-app-secret').value.trim();
+      const account_id = document.getElementById('wechat-account-id').value.trim();
+      const account_name = document.getElementById('wechat-account-name').value.trim();
+      if (!app_id || !app_secret) return alert('请填写 AppID 和 AppSecret');
+      const resp = await apiFetch(API_BASE + '/api/platforms/wechat/bind', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ app_id, app_secret, account_id: account_id || null, account_name: account_name || null })
+      });
+      const data = await resp.json();
+      if (!resp.ok) return alert(data.detail || '绑定失败');
+      document.getElementById('wechat-app-secret').value = '';
+      await loadWechatStatus();
+      alert(data.message || '绑定成功');
+    }
+
+    async function loadWechatStatus() {
+      const el = document.getElementById('wechat-bind-status');
+      if (!getToken()) { if (el) el.textContent = '微信绑定状态：请先登录'; return; }
+      const resp = await apiFetch(API_BASE + '/api/platforms/wechat/status');
+      const data = await resp.json();
+      if (el) {
+        el.textContent = data.bound
+          ? `微信绑定状态：已绑定 ${data.app_id || ''}，${data.connected ? '连接正常' : (data.message || '连接异常')}`
+          : `微信绑定状态：${data.message || '未绑定'}`;
+      }
+    }
+
+    async function testWechatConnection() {
+      if (!getToken()) return alert('请先登录');
+      const resp = await apiFetch(API_BASE + '/api/platforms/wechat/test', { method: 'POST' });
+      const data = await resp.json();
+      alert(data.message || (data.success ? '连接正常' : '连接失败'));
+      await loadWechatStatus();
+    }
+
+    async function unbindWechat() {
+      if (!getToken()) return alert('请先登录');
+      if (!confirm('确定解绑微信公众号？')) return;
+      const resp = await apiFetch(API_BASE + '/api/platforms/wechat/unbind', { method: 'DELETE' });
+      const data = await resp.json();
+      await loadWechatStatus();
+      alert(data.message || '已解绑');
+    }
+
+    updateAuthUI();
+
+    // === Image Upload ===
+    function triggerImageSelect() {
+      if (currentImage) return;
+      document.getElementById('image-input')?.click();
+    }
+
+    function handleImageSelect(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        alert('请选择图片文件');
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        alert('图片不能超过 5MB');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        currentImage = reader.result;
+        renderImagePreview(file.name, file.size);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function renderImagePreview(name, size) {
+      const zone = document.getElementById('image-upload-zone');
+      const empty = document.getElementById('image-upload-empty');
+      const preview = document.getElementById('image-upload-preview');
+      if (!zone || !empty || !preview || !currentImage) return;
+      zone.classList.add('has-image');
+      empty.style.display = 'none';
+      preview.style.display = 'flex';
+      const sizeKb = Math.round(size / 1024);
+      preview.innerHTML = `
+        <img src="${currentImage}" alt="配图预览">
+        <div class="image-preview-meta">
+          <strong>${escapeHtml(name)}</strong>
+          大小：${sizeKb} KB<br>
+          推送时将作为微信公众号封面和正文配图
+          <div style="margin-top:0.75rem;">
+            <button type="button" class="btn-secondary" onclick="clearImage(event)">移除图片</button>
+            <button type="button" class="btn-secondary" onclick="replaceImage(event)">更换图片</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function clearImage(event) {
+      event?.stopPropagation();
+      currentImage = null;
+      const input = document.getElementById('image-input');
+      if (input) input.value = '';
+      const zone = document.getElementById('image-upload-zone');
+      const empty = document.getElementById('image-upload-empty');
+      const preview = document.getElementById('image-upload-preview');
+      if (zone) zone.classList.remove('has-image');
+      if (empty) empty.style.display = 'block';
+      if (preview) { preview.style.display = 'none'; preview.innerHTML = ''; }
+      attachImageToResults();
+      renderPendingList();
+    }
+
+    function replaceImage(event) {
+      event?.stopPropagation();
+      document.getElementById('image-input')?.click();
+    }
+
+    function attachImageToResults() {
+      currentResults = currentResults.map(r => ({ ...r, image: currentImage || null }));
+    }
+
     function showPage(pageId) {
       document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
@@ -1423,6 +1849,10 @@
       // 加载对应页面数据
       if (pageId === 'push') loadPushList();
       if (pageId === 'material') loadMaterials();
+      if (pageId === 'account' || pageId === 'wechat') updateAuthUI();
+      if (pageId === 'wechat') loadWechatStatus();
+      if (pageId === 'generate') updateGenerateFlowStatus();
+      if (pageId === 'home') updateHomeWechatStatus();
     }
 
     // Nav link click handlers
@@ -1486,6 +1916,7 @@
 
     // === Content Generation (AI) ===
     async function generateContent() {
+      if (!await ensureLoggedIn()) return;
       if (!textarea) return;
       const text = textarea.value.trim();
       if (!text) {
@@ -1494,26 +1925,17 @@
         return;
       }
 
-      const selectedPlatforms = [...document.querySelectorAll('.platform-option.selected')]
-        .map(el => el.dataset.platform);
-
-      if (selectedPlatforms.length === 0) {
-        alert('请至少选择一个平台');
-        return;
-      }
-
-      // 显示加载状态
-      const genBtn = document.querySelector('.btn-primary');
+      const genBtn = document.querySelector('#page-generate .btn-primary');
       if (genBtn) {
         genBtn.textContent = '⏳ AI 生成中...';
         genBtn.disabled = true;
       }
 
       try {
-        const resp = await fetch(API_BASE + '/api/content/generate', {
+        const resp = await apiFetch(API_BASE + '/api/content/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: text, image: null })
+          body: JSON.stringify({ text: text, image: null, platforms: [ACTIVE_PLATFORM] })
         });
 
         if (!resp.ok) {
@@ -1522,28 +1944,32 @@
         }
 
         const data = await resp.json();
-        const results = data.contents || [];
-
+        let results = (data.contents || []).filter(r => r.platform === ACTIVE_PLATFORM);
+        if (currentImage) {
+          results = results.map(r => ({ ...r, image: currentImage }));
+        }
         currentResults = results;
-
-        const platformBadges = {
-          wechat: 'wechat', xiaohongshu: 'xiaohongshu', douyin: 'douyin'
-        };
+        renderPendingList();
 
         const resultsGrid = document.getElementById('results-grid');
         if (!resultsGrid) return;
 
+        if (results.length === 0) {
+          resultsGrid.innerHTML = '<div class="auth-status">未生成微信公众号内容</div>';
+          return;
+        }
+
         resultsGrid.innerHTML = results.map((r, i) => `
           <div class="result-card liquid-shimmer" style="animation: page-fade-in 0.5s ${i * 0.1}s var(--ease-smooth) both;">
             <div class="liquid-shimmer-inner" style="padding: 1.5rem; border-radius: 1.5rem;">
-              <span class="platform-badge ${platformBadges[r.platform] || ''}">${r.platform_name}</span>
+              <span class="platform-badge wechat">${r.platform_name}</span>
+              ${r.image ? `<img src="${r.image}" alt="配图" style="width:100%;max-height:200px;object-fit:cover;border-radius:0.75rem;margin:0.75rem 0;border:1px solid var(--border);">` : ''}
               <div class="result-title">${escapeHtml(r.title)}</div>
               <div class="result-content">${escapeHtml(r.content)}</div>
-              <div class="result-tags">${(r.hashtags || []).map(t => `<span class="result-tag">${escapeHtml(t)}</span>`).join('')}</div>
               <div class="result-footer">
-                <span class="result-meta">${r.content.length} 字</span>
+                <span class="result-meta">${r.content.length} 字${r.image ? ' · 含配图' : ''}</span>
                 <button class="copy-btn" onclick="copyContent(${i})">复制</button>
-                <button class="copy-btn" style="margin-left:0.5rem;background:var(--accent-light);color:var(--accent-dark);border:none;" onclick="pushContent(${i})">推送</button>
+                <button class="copy-btn" style="margin-left:0.5rem;background:var(--accent-light);color:var(--accent-dark);border:none;" onclick="pushContent(${i})">推送到草稿箱</button>
               </div>
             </div>
           </div>
@@ -1555,17 +1981,16 @@
           resultsSection.scrollIntoView({ behavior: 'smooth' });
         }
 
-        // 更新操作按钮
-        const pushAllBtn = document.querySelector('#results-section .btn-primary');
+        const pushAllBtn = document.getElementById('btn-push-wechat');
         if (pushAllBtn) pushAllBtn.onclick = pushAll;
-        const saveBtn = document.querySelector('#results-section .btn-secondary');
+        const saveBtn = document.getElementById('btn-save-content');
         if (saveBtn) saveBtn.onclick = saveAll;
 
       } catch (e) {
         alert('AI 生成失败: ' + e.message);
       } finally {
         if (genBtn) {
-          genBtn.textContent = '⚡ AI 智能生成';
+          genBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 12 22 21 10 12 10 12 2"/></svg> AI 智能生成';
           genBtn.disabled = false;
         }
       }
@@ -1589,23 +2014,27 @@
     async function pushContent(index) {
       const item = currentResults[index];
       if (!item) return;
-      await doPush(item.platform, item, null);
+      if (!await ensureWechatBound()) return;
+      await doPush(ACTIVE_PLATFORM, item, null);
+      await loadPushList();
     }
 
     async function pushAll() {
-      const selectedPlatforms = [...document.querySelectorAll('.platform-option.selected')]
-        .map(el => el.dataset.platform);
-      const toPush = currentResults.filter(r => selectedPlatforms.includes(r.platform));
-      if (toPush.length === 0) { alert('没有可推送的内容'); return; }
+      const toPush = currentResults.filter(r => r.platform === ACTIVE_PLATFORM);
+      if (toPush.length === 0) { alert('请先生成微信公众号内容'); return; }
+      if (!await ensureWechatBound()) return;
 
       for (const item of toPush) {
-        await doPush(item.platform, item, null);
+        await doPush(ACTIVE_PLATFORM, item, null);
       }
+      await loadPushList();
     }
 
     async function doPush(platform, content, adaptedId) {
+      const btn = document.getElementById('btn-push-wechat');
+      if (btn) { btn.disabled = true; btn.textContent = '推送中...'; }
       try {
-        const resp = await fetch(API_BASE + '/api/platform/push?platform=' + platform, {
+        const resp = await apiFetch(API_BASE + '/api/platform/push?platform=' + platform, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1619,24 +2048,30 @@
         });
         const data = await resp.json();
         if (resp.ok) {
-          alert(data.message || '推送成功！');
+          alert((data.message || '推送成功！') + (data.media_id ? '\nmedia_id: ' + data.media_id : ''));
         } else {
           alert('推送失败: ' + (data.detail || '未知错误'));
         }
       } catch (e) {
         alert('推送请求失败: ' + e.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> 推送到微信公众号草稿箱';
+        }
       }
     }
 
     // === Save ===
     async function saveAll() {
+      if (!await ensureLoggedIn()) return;
       try {
-        const resp = await fetch(API_BASE + '/api/content/save', {
+        const resp = await apiFetch(API_BASE + '/api/content/save', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             original_text: textarea ? textarea.value : '',
-            original_image: null,
+            original_image: currentImage,
             adapted_contents: currentResults
           })
         });
@@ -1651,42 +2086,95 @@
       }
     }
 
+    function renderPendingList() {
+      const el = document.getElementById('push-pending-list');
+      if (!el) return;
+      const items = currentResults.filter(r => r.platform === ACTIVE_PLATFORM);
+      if (items.length === 0) {
+        el.innerHTML = '<div class="auth-status">暂无待推送内容，请先在「内容生成」页面生成文章</div>';
+        return;
+      }
+      el.innerHTML = items.map((item, i) => `
+        <div class="push-item">
+          <div class="push-content">
+            <div class="push-title">${escapeHtml(item.title)}</div>
+            <div class="push-time">微信公众号 · ${item.content.length} 字${item.image ? ' · 含配图' : ''}</div>
+          </div>
+          <div class="push-platforms">
+            <span class="platform-badge wechat">微信公众号</span>
+          </div>
+          <button class="push-btn" onclick="pushContent(${i})">推送</button>
+        </div>
+      `).join('');
+    }
+
+    function renderPushLogs(logs) {
+      const el = document.getElementById('push-logs-list');
+      if (!el) return;
+      const wechatLogs = (logs || []).filter(l => l.platform === ACTIVE_PLATFORM);
+      if (wechatLogs.length === 0) {
+        el.innerHTML = '<div class="auth-status">暂无微信公众号推送记录</div>';
+        return;
+      }
+      el.innerHTML = wechatLogs.map(log => `
+        <div class="log-item">
+          <div class="log-status ${log.status === 'success' ? 'success' : 'warning'}"></div>
+          <div class="log-content">
+            <div class="log-title">${escapeHtml(log.platform_name)}</div>
+            <div class="log-message">${escapeHtml(log.message || '')} · ${log.created_at || ''}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
     // === Load Push List ===
     async function loadPushList() {
+      renderPendingList();
+      const logsEl = document.getElementById('push-logs-list');
+      if (!getToken()) {
+        if (logsEl) logsEl.innerHTML = '<div class="auth-status">请先登录后查看推送日志</div>';
+        return;
+      }
       try {
-        const resp = await fetch(API_BASE + '/api/push/logs?limit=10');
+        const resp = await apiFetch(API_BASE + '/api/push/logs?platform=wechat&limit=20');
         const data = await resp.json();
-        // TODO: 渲染推送日志列表
-      } catch(e) {}
+        renderPushLogs(data.logs || []);
+      } catch (e) {
+        if (logsEl) logsEl.innerHTML = '<div class="auth-status">加载推送日志失败</div>';
+      }
     }
 
     // === Load Materials ===
     async function loadMaterials() {
       try {
-        const resp = await fetch(API_BASE + '/api/materials?limit=50');
+        const resp = await apiFetch(API_BASE + '/api/materials?limit=50');
         const data = await resp.json();
         // TODO: 渲染素材列表
       } catch(e) {}
     }
 
-    // === Initialize push button handlers ===
-    document.querySelectorAll('.push-btn').forEach(btn => {
-      btn.addEventListener('click', async function() {
-        const item = this.closest('.push-item');
-        const title = item ? item.querySelector('.push-title').textContent : '';
-        alert('请在"内容生成"页面生成内容后，点击结果卡片上的"推送"按钮');
-      });
-    });
-
-    // === Reset Generate Page ===
     function resetGenerate() {
       if (textarea) textarea.value = '';
       if (charCurrent) charCurrent.textContent = '0';
       currentResults = [];
-      document.querySelectorAll('.platform-option').forEach(el => el.classList.add('selected'));
+      currentImage = null;
+      const input = document.getElementById('image-input');
+      if (input) input.value = '';
+      const zone = document.getElementById('image-upload-zone');
+      const empty = document.getElementById('image-upload-empty');
+      const preview = document.getElementById('image-upload-preview');
+      if (zone) zone.classList.remove('has-image');
+      if (empty) empty.style.display = 'block';
+      if (preview) { preview.style.display = 'none'; preview.innerHTML = ''; }
+      renderPendingList();
       const resultsSection = document.getElementById('results-section');
       if (resultsSection) resultsSection.classList.remove('visible');
+      const resultsGrid = document.getElementById('results-grid');
+      if (resultsGrid) resultsGrid.innerHTML = '';
     }
+
+    document.getElementById('btn-push-wechat')?.addEventListener('click', pushAll);
+    document.getElementById('btn-save-content')?.addEventListener('click', saveAll);
   </script>
 </body>
 </html>

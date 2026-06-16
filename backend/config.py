@@ -18,13 +18,13 @@ DEEPSEEK_BASE_URL = "https://api.deepseek.com/v1"
 SERVER_HOST = os.getenv("SERVER_HOST", "0.0.0.0")
 SERVER_PORT = int(os.getenv("SERVER_PORT", "8000"))
 
-# MySQL 数据库配置（腾讯云）
+# MySQL 数据库配置（支持 MYSQL_* 与 DB_* 两种 .env 变量名）
 MYSQL_CONFIG = {
-    "host": os.getenv("MYSQL_HOST", "localhost"),
-    "port": int(os.getenv("MYSQL_PORT", "3306")),
-    "user": os.getenv("MYSQL_USERNAME", "root"),
-    "password": os.getenv("MYSQL_PASSWORD", ""),
-    "database": os.getenv("MYSQL_DATABASE", "ai_content_platform")
+    "host": os.getenv("MYSQL_HOST") or os.getenv("DB_HOST", "localhost"),
+    "port": int(os.getenv("MYSQL_PORT") or os.getenv("DB_PORT") or "3306"),
+    "user": os.getenv("MYSQL_USERNAME") or os.getenv("DB_USER", "root"),
+    "password": os.getenv("MYSQL_PASSWORD") or os.getenv("DB_PASSWORD") or "",
+    "database": os.getenv("MYSQL_DATABASE") or os.getenv("DB_NAME", "ai_content_platform"),
 }
 
 # 微信公众号 API 配置
@@ -37,3 +37,8 @@ WECHAT_DEFAULT_AUTHOR = os.getenv("WECHAT_DEFAULT_AUTHOR", "娱乐八卦")
 WECHAT_NEED_OPEN_COMMENT = int(os.getenv("WECHAT_NEED_OPEN_COMMENT", "1"))
 WECHAT_ONLY_FANS_CAN_COMMENT = int(os.getenv("WECHAT_ONLY_FANS_CAN_COMMENT", "0"))
 WECHAT_DEFAULT_THEME = os.getenv("WECHAT_DEFAULT_THEME", "grace")
+
+# JWT 认证配置
+JWT_SECRET = os.getenv("JWT_SECRET", "change-this-secret-in-production")
+JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+JWT_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "10080"))  # 默认 7 天

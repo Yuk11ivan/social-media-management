@@ -108,17 +108,18 @@ class AIService:
                 hashtags=[]
             )
     
-    def generate_all_platforms(self, text: str, image: str = None) -> list[PlatformContent]:
-        """生成所有平台的适配内容"""
-        platforms = ["wechat", "xiaohongshu", "douyin"]
+    def generate_all_platforms(self, text: str, image: str = None, platforms: list = None) -> list[PlatformContent]:
+        """生成指定平台的适配内容（默认仅微信公众号）"""
+        if platforms is None:
+            platforms = ["wechat"]
         results = []
-        
+
         for platform in platforms:
             content = self.adapt_for_platform(text, platform)
             if image:
                 content.image = image
             results.append(content)
-        
+
         return results
 
 
