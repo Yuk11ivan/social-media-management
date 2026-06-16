@@ -1,127 +1,415 @@
 """
-DeepSeek AI服务 - 智能内容改写
+多模型 AI 服务 — 智能内容改写 v2.1
+支持: DeepSeek + 百炼 DashScope (千问系列) + 千问 VL 视觉分析
+根据任务复杂度自动选择最优模型，支持图片内容识别和智能配图
 """
 from openai import OpenAI
-from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL
+from config import (
+    DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL,
+    BAILIAN_API_KEY, DASHSCOPE_BASE_URL,
+    AI_MODEL_STRATEGY,
+)
 from models import PlatformContent
 import json
+import base64
+import io
 
 
 class AIService:
-    """AI内容改写服务"""
-    
+    """多模型 AI 内容改写服务"""
+
+    MODELS = {
+        "deepseek": {
+            "name": "deepseek-chat",
+            "description": "DeepSeek V3 — 性价比高，适合纯文本改写",
+            "max_tokens": 4096,
+        },
+        "qwen-turbo": {
+            "name": "qwen-turbo",
+            "description": "千问 Turbo — 快速响应",
+            "max_tokens": 4096,
+        },
+        "qwen-plus": {
+            "name": "qwen-plus",
+            "description": "千问 Plus — 平衡质量与速度",
+            "max_tokens": 4096,
+        },
+        "qwen-max": {
+            "name": "qwen-max",
+            "description": "千问 Max — 最强能力，适合复杂任务",
+            "max_tokens": 8192,
+        },
+        "qwen-vl-max": {
+            "name": "qwen-vl-max",
+            "description": "千问 VL Max — 视觉理解，分析图片内容",
+            "max_tokens": 2048,
+        },
+    }
+
     def __init__(self):
-        self.client = OpenAI(
+        self.ds_client = OpenAI(
             api_key=DEEPSEEK_API_KEY,
-            base_url=DEEPSEEK_BASE_URL
+            base_url=DEEPSEEK_BASE_URL,
         )
-    
-    def adapt_for_platform(self, text: str, platform: str) -> PlatformContent:
-        """根据平台特性改写内容"""
-        
-        platform_prompts = {
-            "wechat": """
-你是一个微信公众号内容编辑专家。请将以下内容改写为适合微信公众号发布的格式：
-1. 标题要吸引眼球，但不过于夸张
-2. 内容保持专业、正式的风格
-3. 段落清晰，适合长文阅读
-4. 可以适当添加小标题分隔内容
-5. 不需要添加emoji和话题标签
+        self.qw_client = OpenAI(
+            api_key=BAILIAN_API_KEY,
+            base_url=DASHSCOPE_BASE_URL,
+        )
 
-请返回JSON格式：{"title": "标题", "content": "改写后的内容", "hashtags": []}
-""",
-            "xiaohongshu": """
-你是一个小红书内容创作专家。请将以下内容改写为适合小红书发布的格式：
-1. 标题要吸睛，可以使用emoji
-2. 内容活泼、口语化，多用短句
-3. 每段开头可以加emoji符号
-4. 结尾添加3-5个相关话题标签（如#分享 #好物推荐）
-5. 整体风格轻松、亲切
+    def _select_model(self, task_complexity: str) -> tuple[str, OpenAI]:
+        if AI_MODEL_STRATEGY == "deepseek":
+            return "deepseek-chat", self.ds_client
+        if AI_MODEL_STRATEGY == "qwen":
+            return "qwen-max", self.qw_client
 
-请返回JSON格式：{"title": "标题", "content": "改写后的内容", "hashtags": ["#标签1", "#标签2"]}
-""",
-            "douyin": """
-你是一个抖音短视频文案创作专家。请将以下内容改写为适合抖音短视频的文案：
-1. 开头要有吸引人的钩子（如"家人们谁懂啊！"、"今天这个绝了！"）
-2. 内容口语化、接地气，适合短视频节奏
-3. 文字简洁有力，每句不要太长
-4. 结尾添加2-3个话题标签
-5. 可以适当设置悬念或互动引导
-
-请返回JSON格式：{"title": "抖音短视频", "content": "改写后的文案", "hashtags": ["#标签1", "#标签2"]}
-"""
+        model_map = {
+            "simple": ("deepseek-chat", self.ds_client),
+            "medium": ("qwen-plus", self.qw_client),
+            "complex": ("qwen-max", self.qw_client),
         }
-        
-        prompt = platform_prompts.get(platform, platform_prompts["wechat"])
-        
+        return model_map.get(task_complexity, ("deepseek-chat", self.ds_client))
+
+    # ===================== 图片视觉分析 =====================
+
+    def analyze_images(self, images: list[str]) -> list[dict]:
+        """
+        使用千问 VL 模型分析每张图片的内容
+        返回: [{"index": 0, "description": "...", "suggested_position": "..."}, ...]
+        """
+        if not images or AI_MODEL_STRATEGY == "deepseek":
+            # DeepSeek 不支持视觉，返回基于索引的默认描述
+            return self._default_image_descriptions(len(images or []))
+
+        descriptions = []
+        for i, img_b64 in enumerate(images):
+            try:
+                # 处理 base64 格式
+                img_data = img_b64
+                if "," in img_b64:
+                    # data:image/xxx;base64,xxx → 提取纯 base64
+                    header, b64_content = img_b64.split(",", 1)
+                    img_data = b64_content
+
+                print(f"  [视觉分析] 分析图片 {i+1}/{len(images)}...")
+
+                response = self.qw_client.chat.completions.create(
+                    model="qwen-vl-max",
+                    messages=[{
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "image_url",
+                                "image_url": {"url": img_b64 if img_b64.startswith("data:") else f"data:image/png;base64,{img_data}"}
+                            },
+                            {
+                                "type": "text",
+                                "text": "请用一段话简洁描述这张图片的内容（主题、主体、风格、色调等），然后建议它在微信公众号文章中的最佳插入位置（如：文章开头作为引人注目的封面图、中间段落之间作为配图、结尾作为总结图等）。返回格式：{\"description\": \"...\", \"suggested_position\": \"...\"}"
+                            }
+                        ]
+                    }],
+                    max_tokens=300,
+                    temperature=0.3,
+                )
+
+                result_text = response.choices[0].message.content
+                try:
+                    if "```json" in result_text:
+                        start = result_text.index("```json") + 7
+                        end = result_text.index("```", start)
+                        result = json.loads(result_text[start:end])
+                    elif "```" in result_text:
+                        start = result_text.index("```") + 3
+                        end = result_text.index("```", start)
+                        result = json.loads(result_text[start:end])
+                    else:
+                        result = json.loads(result_text)
+                except (json.JSONDecodeError, ValueError):
+                    result = {
+                        "description": result_text[:100] if result_text else f"配图 {i+1}",
+                        "suggested_position": "文章中部作为配图",
+                    }
+
+                descriptions.append({
+                    "index": i + 1,
+                    "description": result.get("description", f"配图 {i+1}"),
+                    "suggested_position": result.get("suggested_position", "文章中适当位置"),
+                })
+                print(f"    → {descriptions[-1]['description'][:60]}...")
+
+            except Exception as e:
+                print(f"  [视觉分析] 图片{i+1}分析失败: {e}")
+                descriptions.append({
+                    "index": i + 1,
+                    "description": f"配图 {i+1}",
+                    "suggested_position": "文章中适当位置",
+                })
+
+        return descriptions
+
+    def _default_image_descriptions(self, count: int) -> list[dict]:
+        """无视觉能力时的默认图片描述"""
+        positions = [
+            "文章开头作为引人注目的封面图",
+            "文章三分之一处作为段落配图",
+            "文章中部作为内容配图",
+            "文章三分之二处作为段落配图",
+            "文章结尾前作为总结配图",
+        ]
+        return [
+            {
+                "index": i + 1,
+                "description": f"用户提供的配图 {i+1}",
+                "suggested_position": positions[i % len(positions)],
+            }
+            for i in range(count)
+        ]
+
+    # ===================== Prompt 构建 =====================
+
+    def _build_image_context(self, image_descriptions: list[dict]) -> str:
+        """根据图片分析结果构建配图上下文"""
+        if not image_descriptions:
+            return ""
+
+        lines = ["\n【可用配图及插入位置建议】"]
+        for img in image_descriptions:
+            lines.append(
+                f"图片{img['index']}: {img['description']}\n"
+                f"  → 建议插入位置: {img['suggested_position']}"
+            )
+        lines.append("\n【重要】请在文章中使用 [插入图片N] 标记来精确标注每张图片的插入位置。")
+        lines.append("例如：第一张图用作封面放在标题下方，第二张在第二段之后...")
+        lines.append("每张图片必须有一个对应的 [插入图片N] 占位符。")
+        return "\n".join(lines)
+
+    def _wechat_prompt(self, image_descriptions: list[dict] = None) -> str:
+        img_count = len(image_descriptions or [])
+        base = """你是一个微信公众号专业内容编辑。请将以下内容改写为适合微信公众号发布的完整文章：
+
+【标题要求】
+1. 吸引读者点击但不标题党，字数15-25字
+2. 可适当使用疑问句、感叹句等形式
+
+【内容要求】
+1. 开头：用引人入胜的导语引入话题
+2. 正文：分段清晰，每段不超过5行
+3. 使用## 二级标题分隔不同主题段落
+4. 结尾：总结观点 + 引导互动
+5. 风格：专业但不枯燥
+"""
+        if img_count > 0:
+            base += f"""
+【配图要求 - 非常重要】
+用户提供了{img_count}张配图和它们的内容描述。请严格按照以下要求插入图片占位符：
+1. 每张图片必须有一个对应的 [插入图片N] 占位符（N从1开始）
+2. [插入图片N] 必须独占一行
+3. 参考图片内容描述来决定每张图的最佳插入位置
+4. 确保{img_count}个占位符全部出现在文章中
+5. 第1张图通常是封面，放在文章标题下方第一段之前
+"""
+        base += '\n请返回JSON：{"title": "标题", "content": "文章内容(Markdown)", "hashtags": []}'
+        return base
+
+    @staticmethod
+    def _xiaohongshu_prompt() -> str:
+        return """你是小红书爆款笔记创作专家。改写为小红书风格：
+1. 标题吸睛 + emoji  2. 轻松口语化短句  3. 3-5个话题标签
+返回JSON：{"title": "标题", "content": "内容", "hashtags": ["#标签"]}"""
+
+    @staticmethod
+    def _douyin_prompt() -> str:
+        return """你是抖音短视频文案专家。改写为抖音风格：
+1. 钩子开头  2. 短句口语  3. 2-3个话题标签  4. 互动引导
+返回JSON：{"title": "抖音短视频", "content": "文案", "hashtags": ["#标签"]}"""
+
+    @staticmethod
+    def _weibo_prompt() -> str:
+        return """你是微博内容运营专家。改写为微博风格：
+1. 带#话题词#  2. 140-2000字  3. 带2-3个话题标签
+返回JSON：{"title": "标题", "content": "内容", "hashtags": ["#标签"]}"""
+
+    def _get_prompt(self, platform: str, image_descriptions: list[dict] = None) -> str:
+        prompts = {
+            "wechat": self._wechat_prompt(image_descriptions),
+            "xiaohongshu": self._xiaohongshu_prompt(),
+            "douyin": self._douyin_prompt(),
+            "weibo": self._weibo_prompt(),
+        }
+        return prompts.get(platform, prompts["wechat"])
+
+    def _build_user_message(self, text: str, image_context: str) -> str:
+        parts = [f"原始内容：\n{text}"]
+        if image_context:
+            parts.append(image_context)
+        return "\n".join(parts)
+
+    # ===================== 内容生成 =====================
+
+    def adapt_for_platform(
+        self, text: str, platform: str, image_descriptions: list[dict] = None
+    ) -> PlatformContent:
+        """为指定平台改写内容（含图片上下文）"""
+        img_count = len(image_descriptions or [])
+        prompt = self._get_prompt(platform, image_descriptions)
+        image_context = self._build_image_context(image_descriptions or [])
+        user_msg = self._build_user_message(text, image_context)
+
+        complexity = "medium" if img_count > 0 else "simple"
+        model_name, client = self._select_model(complexity)
+        model_config = self.MODELS.get(model_name, self.MODELS["deepseek"])
+
+        platform_names = {
+            "wechat": "微信公众号",
+            "xiaohongshu": "小红书",
+            "douyin": "抖音",
+            "weibo": "微博",
+        }
+
         try:
-            response = self.client.chat.completions.create(
-                model="deepseek-chat",
+            print(f"  [{platform}] 模型: {model_config['description']}, 配图: {img_count}张")
+            response = client.chat.completions.create(
+                model=model_config["name"],
                 messages=[
                     {"role": "system", "content": prompt},
-                    {"role": "user", "content": text}
+                    {"role": "user", "content": user_msg},
                 ],
                 temperature=0.7,
-                max_tokens=1000
+                max_tokens=model_config["max_tokens"],
             )
-            
+
             result_text = response.choices[0].message.content
-            
-            # 解析JSON结果
             try:
-                result = json.loads(result_text)
-            except json.JSONDecodeError:
-                # 如果不是JSON格式，手动构建
+                if "```json" in result_text:
+                    start = result_text.index("```json") + 7
+                    end = result_text.index("```", start)
+                    result = json.loads(result_text[start:end])
+                elif "```" in result_text:
+                    start = result_text.index("```") + 3
+                    end = result_text.index("```", start)
+                    result = json.loads(result_text[start:end])
+                else:
+                    result = json.loads(result_text)
+            except (json.JSONDecodeError, ValueError):
                 result = {
                     "title": text[:30] + "..." if len(text) > 30 else text,
                     "content": result_text,
-                    "hashtags": []
+                    "hashtags": [],
                 }
-            
-            platform_names = {
-                "wechat": "微信公众号",
-                "xiaohongshu": "小红书",
-                "douyin": "抖音"
-            }
-            
+
+            # 验证占位符完整性
+            content = result.get("content", "")
+            for i in range(1, img_count + 1):
+                if f"[插入图片{i}]" not in content:
+                    print(f"  ⚠ [{platform}] 缺少 [插入图片{i}] 占位符，自动追加")
+                    # 在段落之间追加缺失的占位符
+                    paras = content.split("\n\n")
+                    insert_at = min(i, len(paras) - 1)
+                    paras.insert(insert_at, f"[插入图片{i}]")
+                    content = "\n\n".join(paras)
+
             return PlatformContent(
                 platform=platform,
                 platform_name=platform_names.get(platform, platform),
                 title=result.get("title", ""),
-                content=result.get("content", ""),
-                hashtags=result.get("hashtags", [])
+                content=content,
+                hashtags=result.get("hashtags", []),
             )
-            
+
         except Exception as e:
-            # 如果AI调用失败，返回原始内容
-            print(f"AI调用失败: {e}")
-            platform_names = {
-                "wechat": "微信公众号",
-                "xiaohongshu": "小红书",
-                "douyin": "抖音"
-            }
-            return PlatformContent(
-                platform=platform,
-                platform_name=platform_names.get(platform, platform),
-                title=text[:30] + "..." if len(text) > 30 else text,
-                content=text,
-                hashtags=[]
-            )
-    
-    def generate_all_platforms(self, text: str, image: str = None, platforms: list = None) -> list[PlatformContent]:
-        """生成指定平台的适配内容（默认仅微信公众号）"""
+            print(f"  AI调用失败 [{platform}]: {e}")
+            return self._fallback_generate(text, platform, platform_names, prompt, user_msg)
+
+    def _fallback_generate(self, text: str, platform: str, platform_names: dict, prompt: str, user_msg: str) -> PlatformContent:
+        """降级生成"""
+        # 尝试备选模型
+        for fallback_model, fallback_client in [
+            ("deepseek-chat", self.ds_client),
+            ("qwen-plus", self.qw_client),
+        ]:
+            try:
+                response = fallback_client.chat.completions.create(
+                    model=fallback_model,
+                    messages=[
+                        {"role": "system", "content": prompt},
+                        {"role": "user", "content": user_msg},
+                    ],
+                    temperature=0.7,
+                    max_tokens=2048,
+                )
+                result_text = response.choices[0].message.content
+                try:
+                    result = json.loads(result_text)
+                except json.JSONDecodeError:
+                    result = {"title": text[:30] + "...", "content": result_text, "hashtags": []}
+
+                return PlatformContent(
+                    platform=platform,
+                    platform_name=platform_names.get(platform, platform),
+                    title=result.get("title", ""),
+                    content=result.get("content", ""),
+                    hashtags=result.get("hashtags", []),
+                )
+            except Exception:
+                continue
+
+        # 最终降级
+        return PlatformContent(
+            platform=platform,
+            platform_name=platform_names.get(platform, platform),
+            title=text[:30] + "..." if len(text) > 30 else text,
+            content=text,
+            hashtags=[],
+        )
+
+    def generate_all_platforms(
+        self, text: str, image: str = None,
+        images: list = None, platforms: list = None,
+    ) -> list[PlatformContent]:
+        """生成指定平台的适配内容（含图片视觉分析）"""
         if platforms is None:
             platforms = ["wechat"]
-        results = []
 
+        # 合并图片（去重）
+        all_images = []
+        seen = set()
+        if images:
+            for img in images:
+                key = img[:100] if img else ""
+                if key and key not in seen:
+                    all_images.append(img)
+                    seen.add(key)
+        elif image:
+            all_images.append(image)
+
+        # 视觉分析图片
+        image_descriptions = []
+        if all_images:
+            print(f"[AI] 开始分析 {len(all_images)} 张图片...")
+            image_descriptions = self.analyze_images(all_images)
+            print(f"[AI] 图片分析完成: {len(image_descriptions)} 张")
+
+        complexity = self._assess_complexity(text, platforms, len(all_images))
+        print(f"[AI] 任务复杂度: {complexity}, 平台: {len(platforms)}, 图片: {len(all_images)}")
+
+        results = []
         for platform in platforms:
-            content = self.adapt_for_platform(text, platform)
-            if image:
-                content.image = image
+            content = self.adapt_for_platform(text, platform, image_descriptions)
+            if all_images:
+                content.image = all_images[0]
+                content.images = all_images
             results.append(content)
 
         return results
 
+    def _assess_complexity(self, text: str, platforms: list, image_count: int) -> str:
+        text_len = len(text)
+        platform_count = len(platforms)
+        if platform_count >= 3 or (text_len > 500 and image_count >= 2):
+            return "complex"
+        if platform_count >= 2 or image_count >= 1 or text_len > 300:
+            return "medium"
+        return "simple"
 
-# 全局AI服务实例
+
+# 全局服务实例
 ai_service = AIService()

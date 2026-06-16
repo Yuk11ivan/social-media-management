@@ -449,7 +449,7 @@ class WechatAPI:
         source_url: str = "",
         cover_image_b64: str = None,
         cover_image_path: str = None,
-        body_images_b64: List[Tuple[str, str]] = None,  # [(b64, filename), ...]
+        body_images_b64: List[Tuple[str, str]] = None,
         theme: str = "default",
         article_type: str = "news",
         need_open_comment: int = 1,
@@ -457,80 +457,154 @@ class WechatAPI:
     ) -> Dict:
         """
         完整发布流程：
-        1. 处理正文中图片 → 上传到微信 CDN
-        2. 生成微信兼容 HTML
-        3. 上传封面图
-        4. 创建草稿
-
-        返回：{"media_id": "xxx", "title": "...", "article_type": "news"}
+        1. 上传所有图片到微信 CDN
+        2. 精确替换 [插入图片N] 占位符
+        3. 未匹配的图片插入段落之间
+        4. 清理残留占位符
+        5. 生成 HTML → 创建草稿
         """
-        # Step 1: 处理正文图片
-        html_content = content
-        body_image_urls = []
+        import re
 
+        # ===== Step 1: 上传所有图片 =====
+        body_image_urls = []
         if body_images_b64:
-            for img_b64, filename in body_images_b64:
+            for i, (img_b64, filename) in enumerate(body_images_b64):
                 try:
                     img_url = self.upload_base64_image(img_b64, filename)
                     body_image_urls.append(img_url)
+                    print(f"[wechat_api] 图片{i+1} 上传成功")
                 except Exception as e:
-                    print(f"[wechat_api] 正文图片上传失败（跳过）: {e}")
+                    print(f"[wechat_api] 图片{i+1} 上传失败: {e}")
+                    body_image_urls.append(None)
 
-        # 如果有图片URL，将它们嵌入 HTML
-        if body_image_urls:
-            img_tags = "".join(
-                f'<p style="text-align:center;margin:16px 0;">'
-                f'<img src="{url}" style="max-width:100%;border-radius:4px;">'
+        valid_urls = [u for u in body_image_urls if u is not None]
+        print(f"[wechat_api] 图片上传: {len(valid_urls)}/{len(body_image_urls)} 成功")
+
+        # ===== Step 2: 替换占位符 =====
+        processed = content
+
+        for i, url in enumerate(body_image_urls):
+            idx = i + 1
+            img_html = (
+                f'<p style="text-align:center;margin:20px 0;">'
+                f'<img src="{url}" style="max-width:100%;border-radius:8px;display:block;" '
+                f'alt="配图{idx}">'
                 f'</p>'
-                for url in body_image_urls
-            )
-            # 将图片插入到内容末尾
-            html_content = self.markdown_to_wechat_html(title, content, author, theme)
-            html_content = html_content.replace("</div>", f"{img_tags}</div>")
-        else:
-            html_content = self.markdown_to_wechat_html(title, content, author, theme)
+            ) if url else ''
 
-        # Step 2: 上传封面
+            # 尝试多种占位符格式
+            patterns = [
+                rf'\[插入图片\s*{idx}\]',
+                rf'\[配图\s*{idx}\]',
+                rf'\[图片\s*{idx}\]',
+                rf'\[插入图\s*{idx}\]',
+            ]
+
+            replaced = False
+            for pat in patterns:
+                if re.search(pat, processed, re.IGNORECASE):
+                    processed = re.sub(pat, img_html, processed, count=1, flags=re.IGNORECASE)
+                    print(f"[wechat_api] ✓ 图片{idx} 替换占位符: {pat}")
+                    replaced = True
+                    break
+
+            if not replaced and url:
+                # 尝试替换 [配图建议：...] 占位符
+                suggest_match = re.search(r'\[配图建议[：:][^\]]*\]', processed)
+                if suggest_match:
+                    processed = processed.replace(suggest_match.group(0), img_html, 1)
+                    print(f"[wechat_api] ✓ 图片{idx} 替换配图建议")
+                    replaced = True
+
+        # ===== Step 3: 未匹配的图片插入段落之间 =====
+        unmatched_urls = []
+        for i, url in enumerate(body_image_urls):
+            if url is None:
+                continue
+            idx = i + 1
+            # 检查这个索引的占位符是否还在
+            still_there = any(
+                re.search(pat, processed, re.IGNORECASE)
+                for pat in [rf'\[插入图片\s*{idx}\]', rf'\[配图\s*{idx}\]', rf'\[图片\s*{idx}\]']
+            )
+            if still_there:
+                unmatched_urls.append((idx, url))
+
+        if unmatched_urls:
+            # 在段落之间分散插入
+            paragraphs = processed.split('\n\n')
+            new_paras = []
+            unmatched_iter = iter(unmatched_urls)
+            pending = next(unmatched_iter, None)
+
+            for pi, para in enumerate(paragraphs):
+                new_paras.append(para)
+                # 每隔1-2段插入一张图
+                if pending and pi > 0 and pi % 2 == 1:
+                    idx, url = pending
+                    img_html = (
+                        f'<p style="text-align:center;margin:20px 0;">'
+                        f'<img src="{url}" style="max-width:100%;border-radius:8px;" '
+                        f'alt="配图{idx}">'
+                        f'</p>'
+                    )
+                    new_paras.append(img_html)
+                    print(f"[wechat_api] ✓ 图片{idx} 插入到第{pi}段之后")
+                    pending = next(unmatched_iter, None)
+
+            # 剩余图片追加到末尾
+            if pending:
+                for idx, url in [(pending[0], pending[1])] + list(unmatched_iter):
+                    img_html = (
+                        f'<p style="text-align:center;margin:20px 0;">'
+                        f'<img src="{url}" style="max-width:100%;border-radius:8px;" '
+                        f'alt="配图{idx}">'
+                        f'</p>'
+                    )
+                    new_paras.append(img_html)
+                    print(f"[wechat_api] ✓ 图片{idx} 追加到文末")
+
+            processed = '\n\n'.join(new_paras)
+
+        # ===== Step 4: 清理所有残留占位符 =====
+        placeholder_patterns = [
+            r'\[插入图片\s*\d+\]',
+            r'\[配图\s*\d+\]',
+            r'\[图片\s*\d+\]',
+            r'\[配图建议[：:][^\]]*\]',
+            r'\[插入图\s*\d+\]',
+        ]
+        for pat in placeholder_patterns:
+            before = processed
+            processed = re.sub(pat, '', processed, flags=re.IGNORECASE)
+            if before != processed:
+                print(f"[wechat_api] 清理残留占位符: {pat}")
+
+        # ===== Step 5: 生成微信 HTML =====
+        html_content = self.markdown_to_wechat_html(title, processed, author, theme)
+
+        # ===== Step 6: 上传封面 =====
         thumb_media_id = ""
         if cover_image_b64:
             thumb_media_id = self.upload_base64_cover(cover_image_b64, "cover.png")
         elif cover_image_path:
             thumb_media_id = self.upload_cover_image(cover_image_path)
         else:
-            # 无封面图时，创建一个纯色占位封面
             thumb_media_id = self._create_placeholder_cover(title)
 
-        # Step 3: 创建草稿
-        if article_type == "newspic" and body_images_b64:
-            # 图片消息：需要先上传为 material
-            image_media_ids = []
-            for img_b64, filename in body_images_b64[:9]:
-                try:
-                    mid = self.upload_base64_cover(img_b64, filename)
-                    image_media_ids.append(mid)
-                except Exception as e:
-                    print(f"[wechat_api] 图片上传失败: {e}")
+        # ===== Step 7: 创建草稿 =====
+        result = self.create_news_draft(
+            title=title,
+            content_html=html_content,
+            thumb_media_id=thumb_media_id,
+            author=author,
+            digest=digest,
+            content_source_url=source_url,
+            need_open_comment=need_open_comment,
+            only_fans_can_comment=only_fans_can_comment,
+        )
 
-            result = self.create_newspic_draft(
-                title=title,
-                text_content=content,
-                image_media_ids=image_media_ids,
-                author=author,
-                need_open_comment=need_open_comment,
-                only_fans_can_comment=only_fans_can_comment,
-            )
-        else:
-            result = self.create_news_draft(
-                title=title,
-                content_html=html_content,
-                thumb_media_id=thumb_media_id,
-                author=author,
-                digest=digest,
-                content_source_url=source_url,
-                need_open_comment=need_open_comment,
-                only_fans_can_comment=only_fans_can_comment,
-            )
-
+        print(f"[wechat_api] 草稿创建成功, media_id: {result.get('media_id', 'N/A')}")
         return {
             "media_id": result.get("media_id", ""),
             "title": title,

@@ -1,0 +1,215 @@
+import type { PlatformId } from '../types/platform';
+import { getPlatform } from '../config/platforms';
+
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+
+function getToken(): string | null {
+  try {
+    const data = localStorage.getItem('auth-storage');
+    if (data) {
+      const parsed = JSON.parse(data);
+      return parsed?.state?.token || null;
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+function authHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  const token = getToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+}
+
+export class ApiError extends Error {
+  constructor(
+    public status: number,
+    message: string
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
+export async function apiFetch<T>(
+  path: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const url = `${API_BASE}${path}`;
+  const headers = authHeaders();
+
+  // Don't set Content-Type for FormData
+  if (options.body instanceof FormData) {
+    delete headers['Content-Type'];
+  }
+
+  const res = await fetch(url, {
+    ...options,
+    headers: {
+      ...headers,
+      ...(options.headers || {}),
+    },
+  });
+
+  if (res.status === 401) {
+    localStorage.removeItem('auth-storage');
+    window.location.href = '/account';
+    throw new ApiError(401, '未授权，请重新登录');
+  }
+
+  if (!res.ok) {
+    let message = `请求失败 (${res.status})`;
+    try {
+      const errData = await res.json();
+      message = errData.detail || errData.message || message;
+    } catch {
+      // ignore
+    }
+    throw new ApiError(res.status, message);
+  }
+
+  return res.json();
+}
+
+// === Auth API ===
+export interface LoginParams {
+  email: string;
+  password: string;
+}
+
+export interface RegisterParams {
+  email: string;
+  password: string;
+  nickname?: string;
+}
+
+export const authApi = {
+  login: (data: LoginParams) =>
+    apiFetch<{ access_token: string; token_type: string }>('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  register: (data: RegisterParams) =>
+    apiFetch<{ access_token: string; token_type: string }>('/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  me: () => apiFetch<{ id: number; email: string; nickname?: string }>('/api/auth/me'),
+};
+
+// === Content API ===
+export const contentApi = {
+  generate: (text: string, image: string | null, images: string[] | null, platforms: PlatformId[]) =>
+    apiFetch<{
+      results: Array<{
+        platform: string;
+        platform_name: string;
+        title: string;
+        content: string;
+        hashtags?: string;
+        image?: string;
+        images?: string[];
+      }>;
+      timestamp: string;
+    }>('/api/content/generate', {
+      method: 'POST',
+      body: JSON.stringify({ text, image, images, platforms }),
+    }),
+
+  save: (data: {
+    original_text: string;
+    original_image?: string;
+    adapted_contents: unknown[];
+  }) =>
+    apiFetch<{ id: number }>('/api/content/save', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  list: (limit = 20, offset = 0) =>
+    apiFetch<{ items: unknown[]; total: number }>(
+      `/api/content/list?limit=${limit}&offset=${offset}`
+    ),
+
+  delete: (id: number) =>
+    apiFetch<{ message: string }>(`/api/content/${id}`, {
+      method: 'DELETE',
+    }),
+};
+
+// === Platform API ===
+export const platformApi = {
+  getWechatStatus: () =>
+    apiFetch<{
+      bound: boolean;
+      connected: boolean;
+      account_name?: string;
+      account_id?: string;
+    }>('/api/platforms/wechat/status'),
+
+  bindWechat: (data: { app_id: string; app_secret: string; account_name?: string }) =>
+    apiFetch<{ message: string }>('/api/platforms/wechat/bind', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  testWechat: () =>
+    apiFetch<{ message: string }>('/api/platforms/wechat/test', {
+      method: 'POST',
+    }),
+
+  unbindWechat: () =>
+    apiFetch<{ message: string }>('/api/platforms/wechat/unbind', {
+      method: 'DELETE',
+    }),
+
+  push: (platformId: string, adaptedContentId?: number, content?: unknown) =>
+    apiFetch<{ message: string; content_id?: string }>(
+      `/api/platform/push?platform=${platformId}`,
+      {
+        method: 'POST',
+        body: JSON.stringify(content || { adapted_content_id: adaptedContentId }),
+      }
+    ),
+};
+
+// === Push API ===
+export const pushApi = {
+  getLogs: (platform?: string, limit = 20) =>
+    apiFetch<{ logs: unknown[] }>(
+      `/api/push/logs?platform=${platform || ''}&limit=${limit}`
+    ),
+};
+
+// === Material API ===
+export const materialApi = {
+  list: (limit = 50) =>
+    apiFetch<{ materials: unknown[] }>(`/api/materials?limit=${limit}`),
+
+  upload: (file: File, platform?: string) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return apiFetch<{ id: number; name: string; file_path: string }>(
+      `/api/materials?platform=${platform || ''}`,
+      {
+        method: 'POST',
+        body: formData,
+      }
+    );
+  },
+
+  delete: (id: number) =>
+    apiFetch<{ message: string }>(`/api/materials/${id}`, {
+      method: 'DELETE',
+    }),
+};
+
+export { getToken, API_BASE, getPlatform };
