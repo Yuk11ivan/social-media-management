@@ -11,6 +11,12 @@ interface PlatformState {
   bindWechat: (appId: string, appSecret: string, accountName?: string) => Promise<void>;
   testWechat: () => Promise<void>;
   unbindWechat: () => Promise<void>;
+  fetchWeiboStatus: () => Promise<void>;
+  bindWeibo: (accountName?: string, profileDir?: string) => Promise<void>;
+  testWeibo: () => Promise<{ success: boolean; message: string }>;
+  openWeiboLogin: () => Promise<{ success: boolean; message: string }>;
+  unbindWeibo: () => Promise<void>;
+  fetchAllStatuses: () => Promise<void>;
   setIsLoading: (v: boolean) => void;
 }
 
@@ -27,7 +33,7 @@ export const usePlatformStore = create<PlatformState>()((set, get) => ({
     wechat: defaultStatus('wechat'),
     xiaohongshu: { ...defaultStatus('xiaohongshu'), accountName: '即将上线' },
     douyin: { ...defaultStatus('douyin'), accountName: '即将上线' },
-    weibo: { ...defaultStatus('weibo'), accountName: '即将上线' },
+    weibo: defaultStatus('weibo'),
   },
   isLoading: false,
   isBinding: false,
@@ -40,7 +46,13 @@ export const usePlatformStore = create<PlatformState>()((set, get) => ({
       set((s) => ({
         statuses: {
           ...s.statuses,
-          wechat: { ...data, platformId: 'wechat' as PlatformId },
+          wechat: {
+            platformId: 'wechat',
+            bound: data.bound,
+            connected: data.connected,
+            accountName: data.account_name,
+            accountId: data.account_id,
+          },
         },
       }));
     } catch {
@@ -79,6 +91,71 @@ export const usePlatformStore = create<PlatformState>()((set, get) => ({
     } finally {
       set({ isLoading: false });
     }
+  },
+
+  fetchWeiboStatus: async () => {
+    set({ isLoading: true });
+    try {
+      const data = await platformApi.getWeiboStatus();
+      set((s) => ({
+        statuses: {
+          ...s.statuses,
+          weibo: {
+            platformId: 'weibo',
+            bound: data.bound,
+            connected: data.connected,
+            accountName: data.account_name,
+            appId: data.profile_dir,
+          },
+        },
+      }));
+    } catch {
+      // keep default
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  bindWeibo: async (accountName, profileDir) => {
+    set({ isBinding: true });
+    try {
+      await platformApi.bindWeibo({
+        account_name: accountName,
+        profile_dir: profileDir,
+      });
+      await get().fetchWeiboStatus();
+    } finally {
+      set({ isBinding: false });
+    }
+  },
+
+  testWeibo: async () => {
+    set({ isTesting: true });
+    try {
+      return await platformApi.testWeibo();
+    } finally {
+      set({ isTesting: false });
+    }
+  },
+
+  openWeiboLogin: async () => {
+    return await platformApi.openWeiboLogin();
+  },
+
+  unbindWeibo: async () => {
+    set({ isLoading: true });
+    try {
+      await platformApi.unbindWeibo();
+      set((s) => ({
+        statuses: { ...s.statuses, weibo: defaultStatus('weibo') },
+      }));
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  fetchAllStatuses: async () => {
+    await Promise.all([get().fetchWechatStatus(), get().fetchWeiboStatus()]);
   },
 
   setIsLoading: (v) => set({ isLoading: v }),

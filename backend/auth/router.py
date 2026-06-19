@@ -3,10 +3,10 @@
 """
 from fastapi import APIRouter, HTTPException, Depends
 
-from auth.models import UserRegisterRequest, UserLoginRequest, TokenResponse, UserResponse
-from auth.security import hash_password, verify_password, create_access_token
-from auth.dependencies import get_current_user
-from storage_mysql import storage_service
+from .models import UserRegisterRequest, UserLoginRequest, TokenResponse, UserResponse
+from .security import hash_password, verify_password, create_access_token
+from .dependencies import get_current_user
+from ..storage_mysql import storage_service
 
 router = APIRouter(prefix="/api/auth", tags=["认证"])
 

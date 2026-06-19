@@ -171,6 +171,38 @@ export const platformApi = {
       method: 'DELETE',
     }),
 
+  getWeiboStatus: () =>
+    apiFetch<{
+      bound: boolean;
+      connected: boolean;
+      account_name?: string;
+      profile_dir?: string;
+      chrome_ready?: boolean;
+      bun_ready?: boolean;
+      message?: string;
+    }>('/api/platforms/weibo/status'),
+
+  bindWeibo: (data: { account_name?: string; profile_dir?: string }) =>
+    apiFetch<{ message: string }>('/api/platforms/weibo/bind', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  testWeibo: () =>
+    apiFetch<{ success: boolean; message: string }>('/api/platforms/weibo/test', {
+      method: 'POST',
+    }),
+
+  openWeiboLogin: () =>
+    apiFetch<{ success: boolean; message: string }>('/api/platforms/weibo/open-login', {
+      method: 'POST',
+    }),
+
+  unbindWeibo: () =>
+    apiFetch<{ message: string }>('/api/platforms/weibo/unbind', {
+      method: 'DELETE',
+    }),
+
   push: (platformId: string, adaptedContentId?: number, content?: unknown) =>
     apiFetch<{ message: string; content_id?: string }>(
       `/api/platform/push?platform=${platformId}`,

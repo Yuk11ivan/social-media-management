@@ -4,7 +4,7 @@ FastAPI 主应用 — 多平台账号自动化运营系统后端 v2.1
 from fastapi import FastAPI, HTTPException, Depends, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from models import (
+from .models import (
     ContentGenerateRequest,
     ContentGenerateResponse,
     ContentSaveRequest,
@@ -12,25 +12,26 @@ from models import (
     ContentListResponse,
     PlatformContent,
 )
-from ai_service import ai_service
-from storage_mysql import storage_service
-from wechat_api import WechatAPIError
+from .ai_service import ai_service
+from .storage_mysql import storage_service
+from .wechat_api import WechatAPIError
 from datetime import datetime
 from pathlib import Path
 import uuid
 import shutil
 import os
 import uvicorn
-from config import (
+from .config import (
     SERVER_HOST, SERVER_PORT, DEEPSEEK_API_KEY, BAILIAN_API_KEY,
     AI_MODEL_STRATEGY,
     WECHAT_DEFAULT_AUTHOR,
     WECHAT_DEFAULT_THEME, WECHAT_NEED_OPEN_COMMENT, WECHAT_ONLY_FANS_CAN_COMMENT,
 )
-from auth.router import router as auth_router
-from auth.dependencies import get_current_user
-from platforms.router import router as platforms_router
-from platforms.service import get_user_wechat_api
+from .auth.router import router as auth_router
+from .auth.dependencies import get_current_user
+from .platforms.router import router as platforms_router
+from .platforms.service import get_user_wechat_api, get_user_weibo_profile_dir
+from .publishers.weibo_publisher import WeiboPublisherError, publish as publish_weibo
 
 # ===== 文件存储配置 =====
 UPLOAD_DIR = Path(__file__).parent / "uploads"
@@ -435,6 +436,51 @@ async def push_to_platform(
                 platform=platform,
                 platform_name=platform_name,
                 status="failed", message=str(e), user_id=user_id,
+            )
+            raise HTTPException(status_code=500, detail=f"推送失败: {str(e)}")
+
+    if platform == "weibo":
+        try:
+            profile_dir = get_user_weibo_profile_dir(user_id)
+            result = publish_weibo(content, profile_dir)
+
+            storage_service.log_push(
+                adapted_content_id=adapted_content_id,
+                platform=platform,
+                platform_name=platform_name,
+                status="success",
+                content_id=result.get("content_id", ""),
+                message=result.get("message", "微博内容已填入编辑器"),
+                user_id=user_id,
+            )
+            return {
+                "success": True,
+                "message": result.get("message", f"已成功推送至{platform_name}"),
+                "platform": platform,
+                "content_id": result.get("content_id"),
+                "post_type": result.get("post_type"),
+            }
+
+        except WeiboPublisherError as e:
+            storage_service.log_push(
+                adapted_content_id=adapted_content_id,
+                platform=platform,
+                platform_name=platform_name,
+                status="failed",
+                message=str(e),
+                user_id=user_id,
+            )
+            raise HTTPException(status_code=500, detail=f"微博推送失败: {e}")
+        except HTTPException:
+            raise
+        except Exception as e:
+            storage_service.log_push(
+                adapted_content_id=adapted_content_id,
+                platform=platform,
+                platform_name=platform_name,
+                status="failed",
+                message=str(e),
+                user_id=user_id,
             )
             raise HTTPException(status_code=500, detail=f"推送失败: {str(e)}")
 

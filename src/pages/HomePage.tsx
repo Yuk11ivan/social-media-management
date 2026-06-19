@@ -191,10 +191,18 @@ export default function HomePage() {
               <Button
                 size="lg"
                 variant="secondary"
-                onClick={() => navigate('/platforms')}
+                onClick={() => navigate('/platforms/wechat')}
                 icon={<Zap className="w-4 h-4" />}
               >
-                绑定平台
+                绑定微信
+              </Button>
+              <Button
+                size="lg"
+                variant="secondary"
+                onClick={() => navigate('/platforms/weibo')}
+                icon={<Zap className="w-4 h-4" />}
+              >
+                绑定微博
               </Button>
             </motion.div>
           </motion.div>
@@ -211,7 +219,7 @@ export default function HomePage() {
               return (
                 <Link
                   key={pid}
-                  to="/platforms"
+                  to={p.apiStatus === 'live' ? `/platforms/${pid}` : '/platforms'}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/60 backdrop-blur-sm border border-border text-xs font-medium text-secondary hover:text-primary hover:border-emerald-300 transition-all shadow-sm"
                 >
                   <span

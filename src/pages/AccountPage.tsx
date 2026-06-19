@@ -81,6 +81,12 @@ export default function AccountPage() {
               <Button onClick={() => navigate('/generate')} icon={<ArrowRight className="w-4 h-4" />}>
                 开始创作
               </Button>
+              <Button variant="secondary" onClick={() => navigate('/platforms/wechat')}>
+                绑定微信
+              </Button>
+              <Button variant="secondary" onClick={() => navigate('/platforms/weibo')}>
+                绑定微博
+              </Button>
               <Button variant="ghost" onClick={handleLogout}>
                 退出登录
               </Button>

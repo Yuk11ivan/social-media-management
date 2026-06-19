@@ -24,27 +24,32 @@ export default function PushPage() {
     activePlatformTab, pushContent, fetchLogs,
     setActivePlatformTab, clearPending,
   } = usePushStore();
-  const { statuses, fetchWechatStatus } = usePlatformStore();
+  const { statuses, fetchAllStatuses } = usePlatformStore();
 
   useEffect(() => {
     if (token) {
       fetchLogs();
-      fetchWechatStatus();
+      fetchAllStatuses();
     }
   }, [token]);
 
   const handlePush = async (platform: PlatformId, item: typeof pendingItems[0]) => {
-    // Check binding for wechat
     if (platform === 'wechat' && !statuses.wechat?.bound) {
       toast('请先绑定微信公众号', 'error');
-      navigate('/platforms');
+      navigate('/platforms/wechat');
       return;
     }
-    const success = await pushContent(platform, item);
+    if (platform === 'weibo' && !statuses.weibo?.bound) {
+      toast('请先绑定微博账号', 'error');
+      navigate('/platforms/weibo');
+      return;
+    }
+    const success = await pushContent(platform, item).then(() => true).catch((err: Error) => {
+      toast(err.message || '推送失败', 'error');
+      return false;
+    });
     if (success) {
       toast(`已推送到${item.platform_name}`, 'success');
-    } else {
-      toast(`推送失败`, 'error');
     }
   };
 

@@ -9,7 +9,7 @@ from typing import Optional
 import bcrypt
 from jose import JWTError, jwt
 
-from config import JWT_SECRET, JWT_ALGORITHM, JWT_EXPIRE_MINUTES
+from ..config import JWT_SECRET, JWT_ALGORITHM, JWT_EXPIRE_MINUTES
 
 
 def hash_password(password: str) -> str:

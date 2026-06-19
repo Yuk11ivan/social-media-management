@@ -4,12 +4,12 @@
 根据任务复杂度自动选择最优模型，支持图片内容识别和智能配图
 """
 from openai import OpenAI
-from config import (
+from .config import (
     DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL,
     BAILIAN_API_KEY, DASHSCOPE_BASE_URL,
     AI_MODEL_STRATEGY,
 )
-from models import PlatformContent
+from .models import PlatformContent
 import json
 import base64
 import io

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -33,13 +33,19 @@ export default function GeneratePage() {
     addImage, removeImage, clearImages,
     togglePlatform, generate, saveContent, reset, clearError,
   } = useContentStore();
-  const { statuses } = usePlatformStore();
+  const { statuses, fetchAllStatuses } = usePlatformStore();
   const { setPendingItems } = usePushStore();
 
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const [showMaterialSelector, setShowMaterialSelector] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (token) {
+      fetchAllStatuses();
+    }
+  }, [token]);
 
   const checkAuth = () => {
     if (!token) {
@@ -100,9 +106,15 @@ export default function GeneratePage() {
   const handlePush = () => {
     if (!checkAuth()) return;
     const hasWechat = results.some(r => r.platform === 'wechat');
+    const hasWeibo = results.some(r => r.platform === 'weibo');
     if (hasWechat && !statuses.wechat?.bound) {
       toast('请先绑定微信公众号', 'error');
-      navigate('/platforms');
+      navigate('/platforms/wechat');
+      return;
+    }
+    if (hasWeibo && !statuses.weibo?.bound) {
+      toast('请先绑定微博账号', 'error');
+      navigate('/platforms/weibo');
       return;
     }
     setPendingItems(results.map(r => ({
