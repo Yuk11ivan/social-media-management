@@ -4,8 +4,8 @@
 import os
 from pathlib import Path
 
-# 尝试从项目根目录加载 .env 文件
-env_path = Path(__file__).parent.parent / ".env"
+# 尝试从 backend 目录加载 .env 文件
+env_path = Path(__file__).parent / ".env"
 if env_path.exists():
     from dotenv import load_dotenv
     load_dotenv(env_path)
