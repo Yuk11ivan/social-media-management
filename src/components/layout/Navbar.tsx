@@ -12,6 +12,11 @@ const NAV_LINKS = [
   { to: '/history', label: '历史' },
 ];
 
+const BIND_LINKS = [
+  { to: '/platforms/wechat', label: '微信绑定', color: '#07C160' },
+  { to: '/platforms/weibo', label: '微博绑定', color: '#E6162D' },
+];
+
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
@@ -77,20 +82,49 @@ export default function Navbar() {
                 )}
               </NavLink>
             ))}
+
+            <div className="w-px h-5 bg-border mx-1" />
+
+            {BIND_LINKS.map((link) => (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                className={({ isActive }) =>
+                  `relative px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                    isActive ? '' : 'text-secondary hover:text-primary'
+                  }`
+                }
+                style={({ isActive }) => (isActive ? { color: link.color } : undefined)}
+              >
+                {({ isActive }) => (
+                  <>
+                    {link.label}
+                    {isActive && (
+                      <motion.div
+                        layoutId="nav-bind-indicator"
+                        className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full"
+                        style={{ backgroundColor: link.color }}
+                        transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                      />
+                    )}
+                  </>
+                )}
+              </NavLink>
+            ))}
           </div>
 
           {/* Right side */}
           <div className="hidden md:flex items-center gap-3">
             {/* Platform quick icons */}
-            {PLATFORM_ORDER.map((pid) => {
+            {PLATFORM_ORDER.filter((pid) => PLATFORMS[pid].apiStatus === 'live').map((pid) => {
               const p = PLATFORMS[pid];
               return (
                 <Link
                   key={pid}
-                  to="/platforms"
+                  to={`/platforms/${pid}`}
                   className="w-7 h-7 flex items-center justify-center rounded-full transition-all duration-200 hover:scale-110"
                   style={{ backgroundColor: p.color + '18' }}
-                  title={p.name}
+                  title={`${p.name}绑定`}
                 >
                   <span
                     className="text-[11px] font-heading font-bold"
@@ -167,6 +201,24 @@ export default function Navbar() {
                 {link.label}
               </NavLink>
             ))}
+            <div className="pt-2 mt-2 border-t border-border">
+              <p className="px-3 py-1 text-xs text-muted font-medium">平台绑定</p>
+              {BIND_LINKS.map((link) => (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  onClick={() => setMobileOpen(false)}
+                  className={({ isActive }) =>
+                    `block px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                      isActive ? 'bg-gray-50' : 'text-secondary hover:bg-gray-50'
+                    }`
+                  }
+                  style={({ isActive }) => (isActive ? { color: link.color } : undefined)}
+                >
+                  {link.label}
+                </NavLink>
+              ))}
+            </div>
             <div className="pt-2 border-t border-border">
               {token ? (
                 <>

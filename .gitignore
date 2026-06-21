@@ -13,3 +13,4 @@ backend/__pycache__/
 *.egg-info/
 multi-platform-agnet/
 backend/uploads/
+backend/weibo_profiles/

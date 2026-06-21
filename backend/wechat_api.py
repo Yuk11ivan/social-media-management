@@ -9,7 +9,7 @@ import base64
 from typing import Optional, List, Dict, Tuple
 from pathlib import Path
 import httpx
-from config import WECHAT_APP_ID, WECHAT_APP_SECRET
+from .config import WECHAT_APP_ID, WECHAT_APP_SECRET
 
 
 # 微信 API 端点

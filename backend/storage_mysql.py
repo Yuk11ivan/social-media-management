@@ -1,13 +1,13 @@
 """
 MySQL 内容存储服务（支持腾讯云 MySQL）
 """
-from models import ContentItem, PlatformContent
+from .models import ContentItem, PlatformContent
 from datetime import datetime
 import uuid
 import json
 import mysql.connector
 from typing import Optional, List
-from config import MYSQL_CONFIG
+from .config import MYSQL_CONFIG
 
 
 class MySQLStorageService:

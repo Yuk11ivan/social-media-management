@@ -1,9 +1,24 @@
 """
 数据模型定义
 """
-from pydantic import BaseModel
-from typing import Optional, List
+from pydantic import BaseModel, field_validator
+from typing import Optional, List, Union
 from datetime import datetime
+import re
+
+
+def _normalize_hashtags(value) -> List[str]:
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return [str(v).strip() for v in value if str(v).strip()]
+    text = str(value).strip()
+    if not text:
+        return []
+    parts = re.findall(r'#[^\s#]+', text)
+    if parts:
+        return parts
+    return [text]
 
 
 class ContentInput(BaseModel):
@@ -22,6 +37,11 @@ class PlatformContent(BaseModel):
     hashtags: List[str] = []
     image: Optional[str] = None       # 封面图
     images: Optional[List[str]] = None  # 正文配图
+
+    @field_validator("hashtags", mode="before")
+    @classmethod
+    def coerce_hashtags(cls, value):
+        return _normalize_hashtags(value)
 
 
 class ContentGenerateRequest(BaseModel):

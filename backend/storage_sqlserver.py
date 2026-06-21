@@ -6,7 +6,7 @@ from datetime import datetime
 import uuid
 import pyodbc
 from typing import Optional, List
-from config import SQL_CONNECTION_STRING
+from .config import SQL_CONNECTION_STRING
 import json
 
 

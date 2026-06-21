@@ -53,8 +53,9 @@ export const usePushStore = create<PushState>()((set, get) => ({
       }));
       await get().fetchLogs(platform);
       return true;
-    } catch {
-      return false;
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : '推送失败';
+      throw new Error(message);
     } finally {
       set({ isPushing: false });
     }

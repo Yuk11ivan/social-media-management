@@ -3,12 +3,24 @@
 """
 from fastapi import APIRouter, Depends
 
-from auth.dependencies import get_current_user
-from auth.security import encrypt_secret
-from platforms.models import WechatBindRequest, WechatStatusResponse
-from platforms.service import get_user_wechat_api, test_wechat_credentials
-from storage_mysql import storage_service
-from wechat_api import WechatAPIError
+from ..auth.dependencies import get_current_user
+from ..auth.security import encrypt_secret
+from .models import (
+    WechatBindRequest,
+    WechatStatusResponse,
+    WeiboBindRequest,
+    WeiboStatusResponse,
+)
+from .service import (
+    bind_weibo_account,
+    get_user_wechat_api,
+    get_weibo_status_data,
+    open_weibo_login,
+    test_wechat_credentials,
+)
+from ..publishers.weibo_publisher import check_runtime
+from ..storage_mysql import storage_service
+from ..wechat_api import WechatAPIError
 
 router = APIRouter(prefix="/api/platforms", tags=["平台绑定"])
 
@@ -98,3 +110,75 @@ async def unbind_wechat(current_user: dict = Depends(get_current_user)):
     if not removed:
         return {"success": False, "message": "当前未绑定微信公众号"}
     return {"success": True, "message": "已解绑微信公众号"}
+
+
+@router.post("/weibo/bind", response_model=WeiboStatusResponse)
+async def bind_weibo(
+    request: WeiboBindRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """绑定微博（Chrome Profile 登录态）"""
+    bind_weibo_account(
+        user_id=current_user["id"],
+        account_name=request.account_name,
+        profile_dir=request.profile_dir,
+    )
+    data = get_weibo_status_data(current_user["id"])
+    data["message"] = "微博绑定成功，请打开浏览器完成登录"
+    return WeiboStatusResponse(**data)
+
+
+@router.get("/weibo/status", response_model=WeiboStatusResponse)
+async def weibo_status(current_user: dict = Depends(get_current_user)):
+    """查看当前用户的微博绑定状态"""
+    return WeiboStatusResponse(**get_weibo_status_data(current_user["id"]))
+
+
+@router.post("/weibo/test")
+async def test_weibo(current_user: dict = Depends(get_current_user)):
+    """测试微博运行环境与登录态"""
+    data = get_weibo_status_data(current_user["id"])
+    if not data["bound"]:
+        return {"success": False, "message": "尚未绑定微博"}
+
+    issues = []
+    runtime = check_runtime()
+    if not data["bun_ready"]:
+        issues.append("未找到 bun/npx 运行时")
+    if not data["chrome_ready"]:
+        issues.append("未找到 Chrome 浏览器")
+    if not runtime.get("deps_ready"):
+        issues.append("微博脚本依赖未安装，请联系管理员执行 npm install")
+    if not data["connected"]:
+        issues.append("Chrome Profile 中未检测到微博登录态，请先打开浏览器登录")
+
+    if issues:
+        return {"success": False, "message": "；".join(issues)}
+
+    return {"success": True, "message": "微博环境正常，登录态有效"}
+
+
+@router.post("/weibo/open-login")
+async def weibo_open_login(current_user: dict = Depends(get_current_user)):
+    """打开 Chrome 供用户登录微博（首次绑定或 session 过期时）"""
+    account = storage_service.get_platform_account(current_user["id"], "weibo")
+    if not account:
+        return {"success": False, "message": "请先绑定微博"}
+
+    try:
+        open_weibo_login(current_user["id"])
+        return {
+            "success": True,
+            "message": "已打开 Chrome，请在浏览器中登录微博后关闭窗口",
+        }
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+
+
+@router.delete("/weibo/unbind")
+async def unbind_weibo(current_user: dict = Depends(get_current_user)):
+    """解绑微博"""
+    removed = storage_service.delete_platform_account(current_user["id"], "weibo")
+    if not removed:
+        return {"success": False, "message": "当前未绑定微博"}
+    return {"success": True, "message": "已解绑微博"}

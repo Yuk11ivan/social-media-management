@@ -5,6 +5,13 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 3000,
+    watch: {
+      ignored: [
+        '**/backend/weibo_profiles/**',
+        '**/.agents/**',
+        '**/node_modules/**',
+      ],
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:8000',

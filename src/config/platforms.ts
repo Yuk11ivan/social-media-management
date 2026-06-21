@@ -52,10 +52,10 @@ export const PLATFORMS: Record<PlatformId, PlatformConfig> = {
     textClass: 'text-weibo',
     borderClass: 'border-weibo/30',
     hoverBgClass: 'hover:bg-weibo/5',
-    apiStatus: 'planned',
-    description: '话题热搜风格，短文案+话题标签，支持头条文章',
+    apiStatus: 'live',
+    description: '普通微博与头条文章，Chrome 自动填入编辑器',
     contentStyle: '话题引导、短小精悍、热搜关键词、互动性强',
-    bindRequired: false,
+    bindRequired: true,
   },
 };
 

@@ -57,3 +57,11 @@ WECHAT_DEFAULT_THEME = os.getenv("WECHAT_DEFAULT_THEME", "grace")
 JWT_SECRET = os.getenv("JWT_SECRET", "change-this-secret-in-production")
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 JWT_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "10080"))  # 默认 7 天
+
+# ========== 微博推送配置 ==========
+_project_root = Path(__file__).parent.parent
+_default_skills = _project_root / ".agents" / "skills" / "baoyu-post-to-weibo" / "scripts"
+WEIBO_SKILLS_DIR = Path(os.getenv("WEIBO_SKILLS_DIR", str(_default_skills)))
+WEIBO_PROFILES_DIR = Path(os.getenv("WEIBO_PROFILES_DIR", str(_project_root / "backend" / "weibo_profiles")))
+WEIBO_CHROME_PATH = os.getenv("WEIBO_BROWSER_CHROME_PATH", os.getenv("WEIBO_CHROME_PATH", ""))
+WEIBO_BUN_COMMAND = os.getenv("WEIBO_BUN_COMMAND", "")
