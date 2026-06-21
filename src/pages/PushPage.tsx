@@ -7,6 +7,7 @@ import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
 import EmptyState from '../components/ui/EmptyState';
+import PushButton from '../components/ui/PushButton';
 import { usePushStore } from '../store/pushStore';
 import { useAuthStore } from '../store/authStore';
 import { usePlatformStore } from '../store/platformStore';
@@ -20,7 +21,7 @@ export default function PushPage() {
   const { token } = useAuthStore();
   const { toast } = useToast();
   const {
-    pendingItems, logs, isPushing, isLoadingLogs,
+    pendingItems, logs, isPushing, pushingKey, pushProgress, isLoadingLogs,
     activePlatformTab, pushContent, fetchLogs,
     setActivePlatformTab, clearPending,
   } = usePushStore();
@@ -140,31 +141,39 @@ export default function PushPage() {
             </Card>
           ) : (
             <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-3">
-              {pendingItems.map((item, idx) => (
-                <motion.div key={`${item.platform}-${idx}`} variants={staggerItem}>
-                  <Card hover className="flex items-center justify-between">
+              {pendingItems.map((item, idx) => {
+                const itemKey = `${item.platform}-${item.title}`;
+                const isItemPushing = pushingKey === itemKey;
+                const isOtherPushing = isPushing && !isItemPushing;
+                return (
+                <motion.div key={itemKey} variants={staggerItem}>
+                  <Card hover={!isItemPushing} className={`flex items-center justify-between ${isItemPushing ? 'ring-2 ring-emerald-400 ring-offset-1' : ''}`}>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <Badge platform={item.platform} />
+                        {isItemPushing && (
+                          <span className="text-xs text-emerald-600 font-medium animate-pulse">
+                            推送中...
+                          </span>
+                        )}
                       </div>
                       <h4 className="font-medium text-primary truncate">{item.title}</h4>
                       <p className="text-xs text-muted truncate mt-0.5">
                         {item.content.slice(0, 80)}...
                       </p>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="platform"
+                    <PushButton
+                      platform={item.platform}
                       platformColor={PLATFORMS[item.platform].color}
+                      isPushing={isItemPushing}
+                      isDisabled={isOtherPushing}
+                      progress={isItemPushing ? pushProgress : 0}
                       onClick={() => handlePush(item.platform, item)}
-                      isLoading={isPushing}
-                      icon={<Send className="w-3.5 h-3.5" />}
-                    >
-                      推送
-                    </Button>
+                    />
                   </Card>
                 </motion.div>
-              ))}
+                );
+              })}
             </motion.div>
           )}
         </motion.div>

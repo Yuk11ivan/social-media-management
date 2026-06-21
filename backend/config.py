@@ -60,7 +60,7 @@ JWT_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "10080"))  # 默认 7 �
 
 # ========== 微博推送配置 ==========
 _project_root = Path(__file__).parent.parent
-_default_skills = _project_root / ".agents" / "skills" / "baoyu-post-to-weibo" / "scripts"
+_default_skills = _project_root / ".baoyu-skills" / "scripts"
 WEIBO_SKILLS_DIR = Path(os.getenv("WEIBO_SKILLS_DIR", str(_default_skills)))
 WEIBO_PROFILES_DIR = Path(os.getenv("WEIBO_PROFILES_DIR", str(_project_root / "backend" / "weibo_profiles")))
 WEIBO_CHROME_PATH = os.getenv("WEIBO_BROWSER_CHROME_PATH", os.getenv("WEIBO_CHROME_PATH", ""))

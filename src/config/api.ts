@@ -1,7 +1,8 @@
 import type { PlatformId } from '../types/platform';
 import { getPlatform } from '../config/platforms';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+// 留空走 Vite 代理，避免跨域；部署时通过环境变量指定
+const API_BASE = import.meta.env.VITE_API_BASE || '';
 
 function getToken(): string | null {
   try {
@@ -241,6 +242,31 @@ export const materialApi = {
   delete: (id: number) =>
     apiFetch<{ message: string }>(`/api/materials/${id}`, {
       method: 'DELETE',
+    }),
+};
+
+// === Image Generation API ===
+export const imageApi = {
+  extractKeywords: (content: string, title?: string) =>
+    apiFetch<{
+      keywords: {
+        scene: string;
+        style: string;
+        color_tone: string;
+        subject: string;
+        mood: string;
+        cn_prompt: string;
+        negative_prompt: string;
+      };
+    }>('/api/image/extract-keywords', {
+      method: 'POST',
+      body: JSON.stringify({ content, title }),
+    }),
+
+  generate: (prompt: string, negative_prompt?: string, size?: string) =>
+    apiFetch<{ images: string[]; count: number }>('/api/image/generate', {
+      method: 'POST',
+      body: JSON.stringify({ prompt, negative_prompt, size }),
     }),
 };
 

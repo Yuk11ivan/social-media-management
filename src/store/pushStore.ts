@@ -15,6 +15,8 @@ interface PushState {
   }>;
   logs: PushLog[];
   isPushing: boolean;
+  pushingKey: string | null;  // 当前正在推送的 item key
+  pushProgress: number;       // 0-100 推送进度
   isLoadingLogs: boolean;
   activePlatformTab: PlatformId | 'all';
   setPendingItems: (items: PushState['pendingItems']) => void;
@@ -29,14 +31,24 @@ export const usePushStore = create<PushState>()((set, get) => ({
   pendingItems: [],
   logs: [],
   isPushing: false,
+  pushingKey: null,
+  pushProgress: 0,
   isLoadingLogs: false,
   activePlatformTab: 'all',
 
   setPendingItems: (items) => set({ pendingItems: items }),
 
   pushContent: async (platform, item) => {
-    set({ isPushing: true });
+    const key = `${platform}-${item.title}`;
+    set({ isPushing: true, pushingKey: key, pushProgress: 10 });
+
+    // 模拟进度：准备中 → 推送中 → 完成
+    const progressTimer = setTimeout(() => set({ pushProgress: 40 }), 500);
+    const progressTimer2 = setTimeout(() => set({ pushProgress: 70 }), 2000);
+    const progressTimer3 = setTimeout(() => set({ pushProgress: 90 }), 5000);
+
     try {
+      set({ pushProgress: 20 });
       await platformApi.push(platform, undefined, {
         platform,
         platform_name: item.platform_name,
@@ -46,6 +58,7 @@ export const usePushStore = create<PushState>()((set, get) => ({
         image: item.image,
         images: item.images,
       });
+      set({ pushProgress: 100 });
       set((s) => ({
         pendingItems: s.pendingItems.filter(
           (i) => !(i.platform === platform && i.title === item.title)
@@ -57,7 +70,13 @@ export const usePushStore = create<PushState>()((set, get) => ({
       const message = err instanceof Error ? err.message : '推送失败';
       throw new Error(message);
     } finally {
-      set({ isPushing: false });
+      clearTimeout(progressTimer);
+      clearTimeout(progressTimer2);
+      clearTimeout(progressTimer3);
+      // 延迟重置，让 100% 动画播放完
+      setTimeout(() => {
+        set({ isPushing: false, pushingKey: null, pushProgress: 0 });
+      }, 600);
     }
   },
 

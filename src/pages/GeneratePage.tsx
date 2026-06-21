@@ -11,6 +11,7 @@ import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
 import EmptyState from '../components/ui/EmptyState';
 import MaterialSelector from '../components/generate/MaterialSelector';
+import AiImagePanel from '../components/generate/AiImagePanel';
 import { useAuthStore } from '../store/authStore';
 import { useContentStore } from '../store/contentStore';
 import { usePlatformStore } from '../store/platformStore';
@@ -498,6 +499,19 @@ export default function GeneratePage() {
                     </motion.div>
                   );
                 })}
+
+                {/* AI 配图 */}
+                {results.length > 0 && (
+                  <AiImagePanel
+                    content={results[0]?.content || inputText}
+                    title={results[0]?.title || ''}
+                    existingImages={inputImages}
+                    onAddToImages={(img) => {
+                      addImage(img);
+                      toast('已添加到配图', 'success');
+                    }}
+                  />
+                )}
 
                 {/* Batch actions */}
                 {results.length > 0 && (

@@ -31,7 +31,8 @@ from .auth.router import router as auth_router
 from .auth.dependencies import get_current_user
 from .platforms.router import router as platforms_router
 from .platforms.service import get_user_wechat_api, get_user_weibo_profile_dir
-from .publishers.weibo_publisher import WeiboPublisherError, publish as publish_weibo
+from .publishers.weibo_publisher import WeiboPublisherError, publish_weibo
+from .image_service import extract_visual_keywords, generate_image
 
 # ===== 文件存储配置 =====
 UPLOAD_DIR = Path(__file__).parent / "uploads"
@@ -48,7 +49,11 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:5173",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -345,6 +350,49 @@ async def delete_material(
         raise HTTPException(status_code=500, detail=f"删除失败: {str(e)}")
 
 
+# ===================== AI 图片生成 =====================
+
+@app.post("/api/image/extract-keywords")
+async def api_extract_keywords(
+    body: dict,
+    current_user: dict = Depends(get_current_user),
+):
+    """从文案中提取视觉关键词"""
+    content = body.get("content", "")
+    title = body.get("title", "")
+    if not content:
+        raise HTTPException(status_code=400, detail="内容不能为空")
+    try:
+        keywords = await extract_visual_keywords(content, title)
+        return {"keywords": keywords}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"关键词提取失败: {str(e)}")
+
+
+@app.post("/api/image/generate")
+async def api_generate_image(
+    body: dict,
+    current_user: dict = Depends(get_current_user),
+):
+    """根据提示词生成图片"""
+    prompt = body.get("prompt", "")
+    negative_prompt = body.get("negative_prompt", "")
+    size = body.get("size", "1024*1024")
+    n = body.get("n", 1)
+    if not prompt:
+        raise HTTPException(status_code=400, detail="提示词不能为空")
+    try:
+        images = await generate_image(
+            prompt=prompt,
+            negative_prompt=negative_prompt,
+            size=size,
+            n=min(n, 4),
+        )
+        return {"images": images, "count": len(images)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"图片生成失败: {str(e)}")
+
+
 # ===================== 平台推送 =====================
 
 @app.post("/api/platform/push")
@@ -441,8 +489,7 @@ async def push_to_platform(
 
     if platform == "weibo":
         try:
-            profile_dir = get_user_weibo_profile_dir(user_id)
-            result = publish_weibo(content, profile_dir)
+            result = publish_weibo(user_id, content.content, content.images, title=content.title)
 
             storage_service.log_push(
                 adapted_content_id=adapted_content_id,
