@@ -1,3 +1,7 @@
+/**
+ * 小红书 CDP 自动化 — 共享工具函数
+ * 复用 weibo-utils.ts 中的 Chrome 启动/连接逻辑，适配小红书场景
+ */
 import { execSync, spawnSync } from 'node:child_process';
 import path from 'node:path';
 import process from 'node:process';
@@ -38,6 +42,8 @@ export const CHROME_CANDIDATES: PlatformCandidates = {
   ],
 };
 
+// ============ WSL 支持 ============
+
 let wslHome: string | null | undefined;
 function getWslWindowsHome(): string | null {
   if (wslHome !== undefined) return wslHome;
@@ -60,11 +66,13 @@ function getWslWindowsHome(): string | null {
   return wslHome;
 }
 
+// ============ Chrome 管理 ============
+
 export function findChromeExecutable(chromePathOverride?: string): string | undefined {
   if (chromePathOverride?.trim()) return chromePathOverride.trim();
   return findChromeExecutableBase({
     candidates: CHROME_CANDIDATES,
-    envNames: ['WEIBO_BROWSER_CHROME_PATH'],
+    envNames: ['XHS_BROWSER_CHROME_PATH', 'WEIBO_BROWSER_CHROME_PATH'],
   });
 }
 
@@ -90,21 +98,25 @@ export function killChromeByProfile(profileDir: string): void {
 
 export function getDefaultProfileDir(): string {
   return resolveSharedChromeProfileDir({
-    envNames: ['BAOYU_CHROME_PROFILE_DIR', 'WEIBO_BROWSER_PROFILE_DIR'],
+    envNames: ['XHS_CHROME_PROFILE_DIR', 'BAOYU_CHROME_PROFILE_DIR'],
     wslWindowsHome: getWslWindowsHome(),
   });
 }
 
 export async function getFreePort(): Promise<number> {
-  return await getFreePortBase('WEIBO_BROWSER_DEBUG_PORT');
+  return await getFreePortBase('XHS_BROWSER_DEBUG_PORT');
 }
 
-export async function launchChrome(url: string, profileDir: string, chromePathOverride?: string): Promise<number> {
+export async function launchChrome(
+  url: string,
+  profileDir: string,
+  chromePathOverride?: string,
+): Promise<number> {
   const chromePath = findChromeExecutable(chromePathOverride);
-  if (!chromePath) throw new Error('Chrome not found. Set WEIBO_BROWSER_CHROME_PATH env var.');
+  if (!chromePath) throw new Error('Chrome not found. Set XHS_BROWSER_CHROME_PATH env var.');
 
   const port = await getFreePort();
-  console.log(`[weibo-cdp] Launching Chrome (profile: ${profileDir})`);
+  console.log(`[xhs-cdp] Launching Chrome (profile: ${profileDir})`);
   await launchChromeBase({
     chromePath,
     profileDir,
@@ -119,24 +131,30 @@ export function getScriptDir(): string {
   return path.dirname(fileURLToPath(import.meta.url));
 }
 
-function runBunScript(scriptPath: string, args: string[]): boolean {
-  const result = spawnSync('npx', ['-y', 'bun', scriptPath, ...args], { stdio: 'inherit' });
-  return result.status === 0;
-}
+// ============ 小红书特定工具 ============
 
-export function copyImageToClipboard(imagePath: string): boolean {
-  const copyScript = path.join(getScriptDir(), 'copy-to-clipboard.ts');
-  return runBunScript(copyScript, ['image', imagePath]);
-}
+/** 小红书创作者中心 URL */
+export const XHS_CREATOR_URL = 'https://creator.xiaohongshu.com';
 
-export function copyHtmlToClipboard(htmlPath: string): boolean {
-  const copyScript = path.join(getScriptDir(), 'copy-to-clipboard.ts');
-  return runBunScript(copyScript, ['html', '--file', htmlPath]);
-}
+/** 小红书发布页 URL */
+export const XHS_PUBLISH_URL = 'https://creator.xiaohongshu.com/publish';
 
-export function pasteFromClipboard(targetApp?: string, retries = 3, delayMs = 500): boolean {
-  const pasteScript = path.join(getScriptDir(), 'paste-from-clipboard.ts');
-  const args = ['--retries', String(retries), '--delay', String(delayMs)];
-  if (targetApp) args.push('--app', targetApp);
-  return runBunScript(pasteScript, args);
+/** 小红书首页 URL（用于检测登录态） */
+export const XHS_HOME_URL = 'https://www.xiaohongshu.com';
+
+/** 小红书内容限制 */
+export const XHS_LIMITS = {
+  TITLE_MAX_CHARS: 20,
+  CONTENT_MAX_CHARS: 1000,
+  IMAGES_MIN: 1,
+  IMAGES_MAX: 18,
+  TOPICS_MAX: 5,
+} as const;
+
+/**
+ * 截断文本到指定长度（中文友好，按字符数而非字节数）
+ */
+export function truncateText(text: string, maxChars: number): string {
+  if (text.length <= maxChars) return text;
+  return text.slice(0, maxChars - 1) + '…';
 }

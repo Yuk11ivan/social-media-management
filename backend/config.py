@@ -4,11 +4,15 @@
 import os
 from pathlib import Path
 
-# 尝试从 backend 目录加载 .env 文件
-env_path = Path(__file__).parent / ".env"
+# 尝试加载 .env 文件（优先项目根目录，其次 backend 目录）
+_project_root = Path(__file__).parent.parent
+env_path = _project_root / ".env"
+if not env_path.exists():
+    env_path = Path(__file__).parent / ".env"
 if env_path.exists():
     from dotenv import load_dotenv
     load_dotenv(env_path)
+    print(f"[Config] 已加载环境变量: {env_path}")
 
 # ========== AI 模型配置 ==========
 
@@ -65,3 +69,9 @@ WEIBO_SKILLS_DIR = Path(os.getenv("WEIBO_SKILLS_DIR", str(_default_skills)))
 WEIBO_PROFILES_DIR = Path(os.getenv("WEIBO_PROFILES_DIR", str(_project_root / "backend" / "weibo_profiles")))
 WEIBO_CHROME_PATH = os.getenv("WEIBO_BROWSER_CHROME_PATH", os.getenv("WEIBO_CHROME_PATH", ""))
 WEIBO_BUN_COMMAND = os.getenv("WEIBO_BUN_COMMAND", "")
+
+# ========== 小红书推送配置 ==========
+XHS_PROFILES_DIR = Path(os.getenv("XHS_PROFILES_DIR", str(_project_root / "backend" / "xiaohongshu_profiles")))
+XHS_CHROME_PATH = os.getenv("XHS_BROWSER_CHROME_PATH", os.getenv("XHS_CHROME_PATH", ""))
+XHS_BUN_COMMAND = os.getenv("XHS_BUN_COMMAND", "")
+XHS_CHROME_DEBUG_PORT = int(os.getenv("XHS_CHROME_DEBUG_PORT", "9223"))

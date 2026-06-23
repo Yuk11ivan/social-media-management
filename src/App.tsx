@@ -2,7 +2,6 @@ import { Routes, Route } from 'react-router-dom';
 import { ToastProvider } from './components/ui/Toast';
 import AppLayout from './components/layout/AppLayout';
 
-// Direct imports for reliable routing
 import HomePage from './pages/HomePage';
 import GeneratePage from './pages/GeneratePage';
 import MaterialPage from './pages/MaterialPage';
@@ -25,6 +24,7 @@ export default function App() {
           <Route path="/platforms" element={<PlatformsPage />} />
           <Route path="/platforms/wechat" element={<PlatformsPage />} />
           <Route path="/platforms/weibo" element={<PlatformsPage />} />
+          <Route path="/platforms/xiaohongshu" element={<PlatformsPage />} />
         </Routes>
       </AppLayout>
     </ToastProvider>

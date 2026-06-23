@@ -24,10 +24,10 @@ export const PLATFORMS: Record<PlatformId, PlatformConfig> = {
     textClass: 'text-xiaohongshu',
     borderClass: 'border-xiaohongshu/30',
     hoverBgClass: 'hover:bg-xiaohongshu/5',
-    apiStatus: 'mock',
-    description: '种草笔记风格，支持图片+文字，话题标签自动生成',
+    apiStatus: 'live',
+    description: '种草笔记发布，Chrome 自动填入编辑器，支持图文+话题标签',
     contentStyle: '活泼、emoji丰富、短句排版、话题标签',
-    bindRequired: false,
+    bindRequired: true,
   },
   douyin: {
     id: 'douyin',

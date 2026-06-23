@@ -182,3 +182,86 @@ async def unbind_weibo(current_user: dict = Depends(get_current_user)):
     if not removed:
         return {"success": False, "message": "当前未绑定微博"}
     return {"success": True, "message": "已解绑微博"}
+
+
+# ========== 小红书 平台绑定 ==========
+
+from .models import XiaohongshuBindRequest, XiaohongshuStatusResponse
+from .service import (
+    bind_xiaohongshu_account,
+    get_xiaohongshu_status_data,
+    open_xiaohongshu_login,
+)
+from ..publishers.xiaohongshu_publisher import check_runtime as xhs_check_runtime
+
+
+@router.post("/xiaohongshu/bind", response_model=XiaohongshuStatusResponse)
+async def bind_xiaohongshu(
+    request: XiaohongshuBindRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """绑定小红书（创建 Chrome Profile 用于浏览器自动化登录）"""
+    account = bind_xiaohongshu_account(
+        user_id=current_user["id"],
+        account_name=request.account_name,
+        profile_dir=request.profile_dir,
+    )
+
+    data = get_xiaohongshu_status_data(current_user["id"])
+    data["message"] = "小红书绑定成功，请打开浏览器完成扫码/手机验证登录"
+    return XiaohongshuStatusResponse(**data)
+
+
+@router.get("/xiaohongshu/status", response_model=XiaohongshuStatusResponse)
+async def xiaohongshu_status(current_user: dict = Depends(get_current_user)):
+    """查看当前用户的小红书绑定状态"""
+    return XiaohongshuStatusResponse(**get_xiaohongshu_status_data(current_user["id"]))
+
+
+@router.post("/xiaohongshu/test")
+async def test_xiaohongshu(current_user: dict = Depends(get_current_user)):
+    """测试小红书运行环境与登录态"""
+    data = get_xiaohongshu_status_data(current_user["id"])
+    if not data["bound"]:
+        return {"success": False, "message": "尚未绑定小红书"}
+
+    issues = []
+    if not data["chrome_ready"]:
+        issues.append("未找到 Chrome 浏览器")
+    if not data["bun_ready"]:
+        issues.append("未找到 bun/npx 运行时")
+    if not data["deps_ready"]:
+        issues.append("小红书发布脚本 xiaohongshu-post.ts 不存在，请联系管理员")
+    if not data["connected"]:
+        issues.append("Chrome Profile 中未检测到小红书登录态，请先打开浏览器扫码登录")
+
+    if issues:
+        return {"success": False, "message": "；".join(issues)}
+
+    return {"success": True, "message": "小红书运行环境正常，登录态有效"}
+
+
+@router.post("/xiaohongshu/open-login")
+async def xiaohongshu_open_login(current_user: dict = Depends(get_current_user)):
+    """打开 Chrome 供用户扫码/手机验证登录小红书（首次绑定或 session 过期时）"""
+    account = storage_service.get_platform_account(current_user["id"], "xiaohongshu")
+    if not account:
+        return {"success": False, "message": "请先绑定小红书"}
+
+    try:
+        open_xiaohongshu_login(current_user["id"])
+        return {
+            "success": True,
+            "message": "已打开 Chrome，请在浏览器中扫码或手机验证登录小红书后关闭窗口",
+        }
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+
+
+@router.delete("/xiaohongshu/unbind")
+async def unbind_xiaohongshu(current_user: dict = Depends(get_current_user)):
+    """解绑小红书"""
+    removed = storage_service.delete_platform_account(current_user["id"], "xiaohongshu")
+    if not removed:
+        return {"success": False, "message": "当前未绑定小红书"}
+    return {"success": True, "message": "已解绑小红书"}
