@@ -534,11 +534,23 @@ async def push_to_platform(
 
     if platform == "xiaohongshu":
         try:
+            # 收集图片：优先用 images 列表，降级用 image 封面图
+            xhs_images = content.images if content.images else (
+                [content.image] if content.image else None
+            )
+
+            # 调试日志：记录图片传递情况
+            img_count = len(xhs_images) if xhs_images else 0
+            img_preview = ""
+            if xhs_images and len(xhs_images) > 0:
+                img_preview = xhs_images[0][:80] + "..." if len(xhs_images[0]) > 80 else xhs_images[0]
+            print(f"[XHS Push] title={content.title!r}, images_raw={content.images is not None}({len(content.images) if content.images else 0}), image_single={content.image is not None}, xhs_images={img_count}, preview={img_preview!r}")
+
             result = publish_xiaohongshu(
                 user_id=user_id,
                 content=content.content,
                 title=content.title,
-                images=content.images,
+                images=xhs_images,
                 topics=content.hashtags,
             )
 

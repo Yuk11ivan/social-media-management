@@ -192,7 +192,7 @@ from .service import (
     get_xiaohongshu_status_data,
     open_xiaohongshu_login,
 )
-from ..publishers.xiaohongshu_publisher import check_runtime as xhs_check_runtime
+from publishers.xiaohongshu_publisher import check_runtime as xhs_check_runtime
 
 
 @router.post("/xiaohongshu/bind", response_model=XiaohongshuStatusResponse)

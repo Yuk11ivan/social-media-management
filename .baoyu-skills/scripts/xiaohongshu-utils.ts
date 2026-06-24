@@ -82,15 +82,35 @@ export async function findExistingChromeDebugPort(profileDir: string): Promise<n
 
 export function killChromeByProfile(profileDir: string): void {
   try {
-    const result = spawnSync('ps', ['aux'], { encoding: 'utf-8', timeout: 5_000 });
-    if (result.status !== 0 || !result.stdout) return;
-    for (const line of result.stdout.split('\n')) {
-      if (!line.includes(profileDir) || !line.includes('--remote-debugging-port=')) continue;
-      const pid = line.trim().split(/\s+/)[1];
-      if (pid) {
-        try {
-          process.kill(Number(pid), 'SIGTERM');
-        } catch {}
+    if (process.platform === 'win32') {
+      // Windows: 使用 wmic 查找包含该 profileDir 的 chrome 进程
+      const result = spawnSync('wmic', [
+        'process', 'where',
+        `CommandLine LIKE '%${profileDir.replace(/\\/g, '\\\\')}%' AND Name LIKE '%chrome%'`,
+        'get', 'ProcessId',
+      ], { encoding: 'utf-8', timeout: 5_000, shell: true });
+      if (result.status === 0 && result.stdout) {
+        for (const line of result.stdout.split('\n')) {
+          const pid = line.trim();
+          if (pid && /^\d+$/.test(pid)) {
+            try {
+              process.kill(Number(pid), 'SIGTERM');
+            } catch {}
+          }
+        }
+      }
+    } else {
+      // Unix/macOS
+      const result = spawnSync('ps', ['aux'], { encoding: 'utf-8', timeout: 5_000 });
+      if (result.status !== 0 || !result.stdout) return;
+      for (const line of result.stdout.split('\n')) {
+        if (!line.includes(profileDir) || !line.includes('--remote-debugging-port=')) continue;
+        const pid = line.trim().split(/\s+/)[1];
+        if (pid) {
+          try {
+            process.kill(Number(pid), 'SIGTERM');
+          } catch {}
+        }
       }
     }
   } catch {}
@@ -104,7 +124,12 @@ export function getDefaultProfileDir(): string {
 }
 
 export async function getFreePort(): Promise<number> {
-  return await getFreePortBase('XHS_BROWSER_DEBUG_PORT');
+  // 优先使用 XHS_CHROME_DEBUG_PORT（与 Python 端 config.py 一致），其次 XHS_BROWSER_DEBUG_PORT
+  for (const envName of ['XHS_CHROME_DEBUG_PORT', 'XHS_BROWSER_DEBUG_PORT']) {
+    const val = Number.parseInt(process.env[envName] ?? '', 10);
+    if (Number.isInteger(val) && val > 0) return val;
+  }
+  return await getFreePortBase();
 }
 
 export async function launchChrome(

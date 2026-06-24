@@ -10,9 +10,9 @@ import os
 import shutil
 import uuid
 import base64
-from ..config import XHS_PROFILES_DIR, XHS_CHROME_PATH, XHS_BUN_COMMAND, XHS_CHROME_DEBUG_PORT
-from ..auth.security import decrypt_secret
-from ..storage_mysql import storage_service
+from config import XHS_PROFILES_DIR, XHS_CHROME_PATH, XHS_BUN_COMMAND, XHS_CHROME_DEBUG_PORT
+from auth.security import decrypt_secret
+from storage_mysql import storage_service
 
 
 class XiaohongshuPublisherError(Exception):
@@ -118,8 +118,8 @@ def profile_has_session(profile_dir: Path) -> bool:
 
     检测策略（任一满足即认为有登录态）：
     1. baoyu 格式的 session.json（旧方案兼容）
-    2. Chrome Profile 的 Default/ 目录存在且有 Cookies/Login Data
-    3. Local Storage 目录存在（小红书使用 Local Storage 存储登录信息）
+    2. Chrome Profile 的 Default/ 目录存在且有有效的 Cookies/Login Data
+    3. Local Storage 目录存在且非空（小红书使用 Local Storage 存储登录信息）
     """
     profile_dir = Path(profile_dir)
 
@@ -137,10 +137,22 @@ def profile_has_session(profile_dir: Path) -> bool:
     # 策略2: Chrome Profile — Default 目录存在且有会话数据
     default_dir = profile_dir / "Default"
     if default_dir.is_dir():
-        has_cookies = (default_dir / "Cookies").exists()
-        has_login_data = (default_dir / "Login Data").exists()
-        has_local_storage = (default_dir / "Local Storage").is_dir()
-        has_session_storage = (default_dir / "Session Storage").is_dir()
+        # Cookies 文件存在且大小 > 0（Chrome 正常退出后才会写入）
+        cookies_file = default_dir / "Cookies"
+        has_cookies = cookies_file.exists() and cookies_file.stat().st_size > 0
+
+        # Login Data 文件存在且大小 > 0
+        login_data_file = default_dir / "Login Data"
+        has_login_data = login_data_file.exists() and login_data_file.stat().st_size > 0
+
+        # Local Storage 目录存在且有 leveldb 文件（小红书登录信息存储于此）
+        ls_dir = default_dir / "Local Storage" / "leveldb"
+        has_local_storage = ls_dir.is_dir() and any(ls_dir.glob("*.ldb"))
+
+        # Session Storage 目录存在且有文件
+        ss_dir = default_dir / "Session Storage"
+        has_session_storage = ss_dir.is_dir() and any(ss_dir.iterdir())
+
         if has_cookies or has_login_data or has_local_storage or has_session_storage:
             return True
 
@@ -148,7 +160,11 @@ def profile_has_session(profile_dir: Path) -> bool:
 
 
 def open_login_browser(profile_dir: Path) -> None:
-    """打开 Chrome/Edge 浏览器供用户扫码/手机登录小红书"""
+    """打开 Chrome/Edge 浏览器供用户扫码/手机登录小红书
+
+    注意：登录完成后请手动关闭浏览器（点击 X），Chrome 会自动将 Cookies 写入磁盘。
+    不要通过任务管理器强制结束进程，否则登录态可能丢失。
+    """
     chrome_path = _find_chrome()
     if not chrome_path:
         raise XiaohongshuPublisherError(
@@ -189,16 +205,50 @@ def _truncate_text(text: str, max_chars: int) -> str:
     return text[:max_chars - 1] + "…"
 
 
-def _run_script(cmd: list[str], cwd: str) -> subprocess.CompletedProcess:
+def _run_script(cmd_parts: list[str], cwd: str) -> subprocess.CompletedProcess:
     """执行 Bun 脚本命令"""
-    return subprocess.run(
-        cmd,
+    # 继承当前环境变量，并确保 XHS_CHROME_DEBUG_PORT 传递给 Bun 脚本
+    env = os.environ.copy()
+    env["XHS_CHROME_DEBUG_PORT"] = str(XHS_CHROME_DEBUG_PORT)
+    # 确保子进程也用 UTF-8
+    env["PYTHONIOENCODING"] = "utf-8"
+
+    if os.name == "nt":
+        # Windows: 用 list2cmdline 正确转义参数（处理换行、空格、引号等）
+        cmd_str = subprocess.list2cmdline(cmd_parts)
+        shell = True
+    else:
+        cmd_str = cmd_parts
+        shell = False
+
+    print(f"[XHS] 执行命令: {cmd_str[:300]}...")
+    print(f"[XHS] 工作目录: {cwd}")
+
+    result = subprocess.run(
+        cmd_str,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",  # 遇到无法解码的字符用 ? 替代，而不是崩溃
         timeout=300,  # 5 分钟超时
         cwd=cwd,
-        shell=(os.name == "nt"),  # Windows 下需要 shell=True
+        shell=shell,
+        env=env,
     )
+
+    print(f"[XHS] 退出码: {result.returncode}")
+    if result.stdout:
+        # 只打印最后 1000 字符（关键信息通常在最后）
+        stdout = result.stdout
+        if len(stdout) > 1000:
+            print(f"[XHS] stdout (前200): {stdout[:200]}")
+            print(f"[XHS] stdout (后800): {stdout[-800:]}")
+        else:
+            print(f"[XHS] stdout: {stdout}")
+    if result.stderr:
+        print(f"[XHS] stderr: {result.stderr[-800:]}")
+
+    return result
 
 
 def publish_xiaohongshu(
@@ -226,6 +276,10 @@ def publish_xiaohongshu(
     Raises:
         XiaohongshuPublisherError: 发布失败
     """
+    # 0. 日志：记录收到的参数
+    img_count = len(images) if images else 0
+    print(f"[XHS Publisher] 收到推送请求: title={title!r}, content_len={len(content) if content else 0}, images={img_count}, topics={topics}")
+
     # 1. 验证运行环境
     runtime = check_runtime()
     if not runtime["chrome_ready"]:
@@ -251,8 +305,16 @@ def publish_xiaohongshu(
     # 3. 检查登录态
     if not profile_has_session(profile_dir):
         raise XiaohongshuPublisherError(
-            "小红书未登录，请先通过「打开浏览器登录」完成扫码/手机验证登录"
+            "小红书未登录或登录态已失效，请先通过「打开浏览器登录」完成扫码/手机验证登录，"
+            "登录成功后请手动关闭浏览器（点击 X），再进行推送"
         )
+
+    # 3.5 检查 Chrome 是否正在使用该 Profile（Lock 文件）
+    lock_file = profile_dir / "Default" / "lockfile"
+    if lock_file.exists():
+        # Chrome 可能正在运行，Bun 脚本会尝试复用或重启
+        # 这里只记录日志，不阻断流程
+        print(f"[XHS] 检测到 Chrome Profile 锁文件，Chrome 可能正在运行")
 
     # 4. 内容预处理
     safe_title = _truncate_text(title or "", XHS_TITLE_MAX_CHARS)
@@ -271,49 +333,67 @@ def publish_xiaohongshu(
     if not bun_cmd:
         raise XiaohongshuPublisherError("未找到 bun/npx 运行时")
 
-    # 构建命令行参数
-    cmd = bun_cmd.split() + [str(xhs_script)]
-
-    if safe_title:
-        cmd.extend(["--title", safe_title])
-    if safe_content:
-        cmd.extend(["--content", safe_content])
+    # 构建命令行参数 — Windows 下用正斜杠
+    script_str = str(xhs_script).replace("\\", "/")
+    cmd_parts = bun_cmd.split() + [script_str]
 
     # 处理图片 — 保存 base64 为临时文件，传递路径
     temp_files = []
+    temp_meta = None
     try:
+        image_paths = []
         if images:
-            image_paths = []
             for img_b64 in images[:XHS_IMAGES_MAX]:
                 temp_file = _save_temp_image(img_b64, "xhs")
                 if temp_file:
                     temp_files.append(temp_file)
-                    image_paths.append(str(temp_file))
-
-            if image_paths:
-                cmd.extend(["--images", ",".join(image_paths)])
+                    image_paths.append(str(temp_file).replace("\\", "/"))
 
         # 处理话题标签
+        safe_topics = []
         if topics:
             safe_topics = [t for t in topics[:XHS_TOPICS_MAX] if t]
-            if safe_topics:
-                cmd.extend(["--topics", ",".join(safe_topics)])
 
-        # Chrome Profile 目录
-        cmd.extend(["--profile", str(profile_dir)])
+        # ===== 用临时 JSON 文件传递参数（彻底避免 shell 转义问题） =====
+        meta = {
+            "title": safe_title,
+            "content": safe_content,
+            "images": image_paths,
+            "topics": safe_topics,
+            "profile": str(profile_dir).replace("\\", "/"),
+        }
+        temp_dir = Path(__file__).parent.parent / "uploads" / "temp"
+        temp_dir.mkdir(parents=True, exist_ok=True)
+        temp_meta = temp_dir / f"xhs_meta_{uuid.uuid4().hex[:8]}.json"
+        temp_meta.write_text(
+            json.dumps(meta, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        print(f"[XHS] 参数文件: {temp_meta}")
+
+        cmd_parts.extend(["--meta", str(temp_meta).replace("\\", "/")])
 
         # 6. 执行脚本
         cwd = str(scripts_dir.parent)
-        result = _run_script(cmd, cwd)
+        result = _run_script(cmd_parts, cwd)
 
         if result.returncode != 0:
-            error_msg = result.stderr.strip() if result.stderr else result.stdout.strip()
+            stderr_msg = (result.stderr or "").strip()
+            stdout_msg = (result.stdout or "").strip()
+            # 优先从 stdout 中提取 FATAL 错误
+            fatal_line = ""
+            for line in stdout_msg.split("\n"):
+                if "FATAL" in line or "Error" in line or "error" in line:
+                    fatal_line = line.strip()
+                    break
+            error_msg = fatal_line or stderr_msg or stdout_msg or "未知错误（脚本无输出）"
             raise XiaohongshuPublisherError(f"发布失败: {error_msg}")
 
         return {
             "success": True,
-            "message": "小红书笔记内容已填入编辑器，请在浏览器中审核后手动点击发布",
+            "message": "小红书笔记已自动保存为草稿，请在创作者中心草稿箱中审核发布",
             "output": result.stdout,
+            "has_images": bool(images),
         }
 
     except subprocess.TimeoutExpired:
@@ -323,7 +403,9 @@ def publish_xiaohongshu(
     except Exception as e:
         raise XiaohongshuPublisherError(f"发布失败: {str(e)}")
     finally:
-        # 7. 清理临时图片文件
+        # 7. 清理临时文件
         for tf in temp_files:
             if tf.exists():
                 tf.unlink(missing_ok=True)
+        if temp_meta and temp_meta.exists():
+            temp_meta.unlink(missing_ok=True)

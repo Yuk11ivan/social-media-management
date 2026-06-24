@@ -106,8 +106,8 @@ def open_weibo_login(user_id: str) -> None:
 
 # ========== 小红书绑定服务 ==========
 
-from ..config import XHS_PROFILES_DIR
-from ..publishers.xiaohongshu_publisher import (
+from config import XHS_PROFILES_DIR
+from publishers.xiaohongshu_publisher import (
     check_runtime as xhs_check_runtime,
     get_default_profile_dir as xhs_get_default_profile_dir,
     open_login_browser as xhs_open_login_browser,
