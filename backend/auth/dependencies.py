@@ -5,7 +5,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from .security import decode_access_token
-from ..storage_mysql import storage_service
+from storage_mysql import storage_service
 
 security = HTTPBearer(auto_error=False)
 

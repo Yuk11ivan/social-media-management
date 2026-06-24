@@ -9,9 +9,9 @@ import os
 import shutil
 import uuid
 import base64
-from ..config import WEIBO_PROFILES_DIR, WEIBO_CHROME_PATH, WEIBO_BUN_COMMAND, WEIBO_SKILLS_DIR
-from ..auth.security import decrypt_secret
-from ..storage_mysql import storage_service
+from config import WEIBO_PROFILES_DIR, WEIBO_CHROME_PATH, WEIBO_BUN_COMMAND, WEIBO_SKILLS_DIR
+from auth.security import decrypt_secret
+from storage_mysql import storage_service
 
 
 class WeiboPublisherError(Exception):

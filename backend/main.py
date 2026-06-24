@@ -4,7 +4,7 @@ FastAPI 主应用 — 多平台账号自动化运营系统后端 v2.1
 from fastapi import FastAPI, HTTPException, Depends, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from .models import (
+from models import (
     ContentGenerateRequest,
     ContentGenerateResponse,
     ContentSaveRequest,
@@ -12,27 +12,27 @@ from .models import (
     ContentListResponse,
     PlatformContent,
 )
-from .ai_service import ai_service
-from .storage_mysql import storage_service
-from .wechat_api import WechatAPIError
+from ai_service import ai_service
+from storage_mysql import storage_service
+from wechat_api import WechatAPIError
 from datetime import datetime
 from pathlib import Path
 import uuid
 import shutil
 import os
 import uvicorn
-from .config import (
+from config import (
     SERVER_HOST, SERVER_PORT, DEEPSEEK_API_KEY, BAILIAN_API_KEY,
     AI_MODEL_STRATEGY,
     WECHAT_DEFAULT_AUTHOR,
     WECHAT_DEFAULT_THEME, WECHAT_NEED_OPEN_COMMENT, WECHAT_ONLY_FANS_CAN_COMMENT,
 )
-from .auth.router import router as auth_router
-from .auth.dependencies import get_current_user
-from .platforms.router import router as platforms_router
-from .platforms.service import get_user_wechat_api, get_user_weibo_profile_dir
-from .publishers.weibo_publisher import WeiboPublisherError, publish_weibo
-from .image_service import extract_visual_keywords, generate_image
+from auth.router import router as auth_router
+from auth.dependencies import get_current_user
+from platforms.router import router as platforms_router
+from platforms.service import get_user_wechat_api, get_user_weibo_profile_dir
+from publishers.weibo_publisher import WeiboPublisherError, publish_weibo
+from image_service import extract_visual_keywords, generate_image
 
 # ===== 文件存储配置 =====
 UPLOAD_DIR = Path(__file__).parent / "uploads"

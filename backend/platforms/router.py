@@ -3,8 +3,8 @@
 """
 from fastapi import APIRouter, Depends
 
-from ..auth.dependencies import get_current_user
-from ..auth.security import encrypt_secret
+from auth.dependencies import get_current_user
+from auth.security import encrypt_secret
 from .models import (
     WechatBindRequest,
     WechatStatusResponse,
@@ -18,9 +18,9 @@ from .service import (
     open_weibo_login,
     test_wechat_credentials,
 )
-from ..publishers.weibo_publisher import check_runtime
-from ..storage_mysql import storage_service
-from ..wechat_api import WechatAPIError
+from publishers.weibo_publisher import check_runtime
+from storage_mysql import storage_service
+from wechat_api import WechatAPIError
 
 router = APIRouter(prefix="/api/platforms", tags=["平台绑定"])
 

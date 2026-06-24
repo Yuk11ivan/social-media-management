@@ -5,17 +5,17 @@ from pathlib import Path
 
 from fastapi import HTTPException
 
-from ..auth.security import decrypt_secret, encrypt_secret
-from ..config import WEIBO_PROFILES_DIR
-from ..publishers.weibo_publisher import (
+from auth.security import decrypt_secret, encrypt_secret
+from config import WEIBO_PROFILES_DIR
+from publishers.weibo_publisher import (
     check_runtime,
     get_default_profile_dir,
     open_login_browser,
     profile_has_session,
     resolve_profile_dir,
 )
-from ..storage_mysql import storage_service
-from ..wechat_api import WechatAPI, WechatAPIError
+from storage_mysql import storage_service
+from wechat_api import WechatAPI, WechatAPIError
 
 
 def get_user_wechat_api(user_id: str) -> WechatAPI:

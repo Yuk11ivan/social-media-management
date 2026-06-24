@@ -6,7 +6,7 @@ import time
 import base64
 from pathlib import Path
 from typing import Optional
-from .config import BAILIAN_API_KEY, DASHSCOPE_BASE_URL
+from config import BAILIAN_API_KEY, DASHSCOPE_BASE_URL
 
 
 # 万相文生图 API（DashScope 专属端点）
