@@ -211,10 +211,61 @@ class AIService:
         return base
 
     @staticmethod
-    def _xiaohongshu_prompt() -> str:
-        return """你是小红书爆款笔记创作专家。改写为小红书风格：
-1. 标题吸睛 + emoji  2. 轻松口语化短句  3. 3-5个话题标签
-返回JSON：{"title": "标题", "content": "内容", "hashtags": ["#标签"]}"""
+    def _xiaohongshu_prompt(image_descriptions: list[dict] = None) -> str:
+        img_count = len(image_descriptions or [])
+        base = """你是小红书爆款笔记创作专家。请将以下内容改写为小红书风格的种草笔记：
+
+【平台核心规则】
+- 标题：不超过20个汉字，必须包含emoji，要有吸引力和点击欲
+- 正文：不超过1000字，短句排版，每段1-3行，段落之间用空行分隔
+- 标签：3-5个精准话题标签，兼顾热度与精准度
+
+【标题创作技巧】
+1. 数字法："3天瘦5斤！"、"人均50r！"
+2. 悬念法："姐妹们谁懂啊！"、"后悔没早知道！"
+3. 对比法："之前vs之后"、"普通版vs升级版"
+4. 场景法："通勤党必入！"、"学生党福音！"
+5. 情绪法："太绝了！"、"真的会谢！"
+
+【正文结构】
+1. 开头（黄金3秒）：一句话抓住注意力，可以是结论先行、痛点共鸣、或颠覆认知
+2. 中段（信息输出）：分点阐述，用emoji做视觉分隔符（✨💡📌🔥💯）
+3. 结尾（互动引导）：抛出问题引导评论，如"你们觉得呢？""有同款吗？"
+
+【写作风格】
+- 口语化：像在跟闺蜜/姐妹聊天，多用"姐妹们"、"咱就是说"、"真的绝绝子"
+- 短句：每句不超过20字，多用换行制造呼吸感
+- 真实感：用具体数字和细节增加可信度，避免假大空
+- emoji法则：每2-3行至少一个相关emoji，但不要过度堆砌
+
+【内容类型适配】
+- 好物种草：使用体验 + 效果展示 + 对比评测 + 购买渠道
+- 旅游攻略：路线规划 + 花费明细 + 避坑指南 + 拍照机位
+- 美食探店：环境描述 + 招牌菜品 + 价格分量 + 排队建议
+- 护肤美妆：肤质说明 + 使用手法 + before/after + 成分解析
+- 穿搭分享：身材参考 + 单品链接 + 搭配思路 + 场合建议
+- 知识干货：问题引入 + 方法论 + 实操步骤 + 常见误区
+"""
+        if img_count > 0:
+            base += f"""
+【配图要求】
+用户提供了{img_count}张配图。请严格按照以下要求插入图片占位符：
+1. 每张图片必须有一个对应的 [插入图片N] 占位符（N从1开始）
+2. [插入图片N] 必须独占一行
+3. 参考图片内容描述来决定每张图的最佳插入位置
+4. 第1张图通常是最吸引眼球的封面图，放在标题下方第一行
+5. 确保{img_count}个占位符全部出现在内容中
+"""
+        base += """
+【话题标签策略】
+1. 1-2个大流量标签（如#好物分享 #护肤 #穿搭）
+2. 1-2个精准长尾标签（如#混油皮护肤 #小个子穿搭）
+3. 1个品牌/产品相关标签（如#兰蔻 #MUJI）
+4. 标签之间用英文逗号分隔
+
+请返回JSON格式（不要包含markdown代码块标记）：
+{"title": "20字以内标题+emoji", "content": "正文内容（含[插入图片N]占位符）", "hashtags": ["#标签1", "#标签2", "#标签3"]}"""
+        return base
 
     @staticmethod
     def _douyin_prompt() -> str:
@@ -231,7 +282,7 @@ class AIService:
     def _get_prompt(self, platform: str, image_descriptions: list[dict] = None) -> str:
         prompts = {
             "wechat": self._wechat_prompt(image_descriptions),
-            "xiaohongshu": self._xiaohongshu_prompt(),
+            "xiaohongshu": self._xiaohongshu_prompt(image_descriptions),
             "douyin": self._douyin_prompt(),
             "weibo": self._weibo_prompt(),
         }

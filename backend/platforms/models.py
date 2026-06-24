@@ -38,3 +38,22 @@ class WeiboStatusResponse(BaseModel):
     bun_ready: bool = False
     message: Optional[str] = None
     bound_at: Optional[datetime] = None
+
+
+# ========== 小红书 ==========
+
+class XiaohongshuBindRequest(BaseModel):
+    account_name: Optional[str] = Field(default=None, max_length=100)
+    profile_dir: Optional[str] = Field(default=None, max_length=500)
+
+
+class XiaohongshuStatusResponse(BaseModel):
+    bound: bool
+    account_name: Optional[str] = None
+    profile_dir: Optional[str] = None
+    connected: bool = False
+    chrome_ready: bool = False
+    bun_ready: bool = False
+    deps_ready: bool = False
+    message: Optional[str] = None
+    bound_at: Optional[datetime] = None

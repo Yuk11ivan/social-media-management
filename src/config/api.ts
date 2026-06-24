@@ -204,6 +204,40 @@ export const platformApi = {
       method: 'DELETE',
     }),
 
+  // 小红书
+  getXiaohongshuStatus: () =>
+    apiFetch<{
+      bound: boolean;
+      connected: boolean;
+      account_name?: string;
+      profile_dir?: string;
+      chrome_ready?: boolean;
+      bun_ready?: boolean;
+      deps_ready?: boolean;
+      message?: string;
+    }>('/api/platforms/xiaohongshu/status'),
+
+  bindXiaohongshu: (data: { account_name?: string; profile_dir?: string }) =>
+    apiFetch<{ message: string }>('/api/platforms/xiaohongshu/bind', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  testXiaohongshu: () =>
+    apiFetch<{ success: boolean; message: string }>('/api/platforms/xiaohongshu/test', {
+      method: 'POST',
+    }),
+
+  openXiaohongshuLogin: () =>
+    apiFetch<{ success: boolean; message: string }>('/api/platforms/xiaohongshu/open-login', {
+      method: 'POST',
+    }),
+
+  unbindXiaohongshu: () =>
+    apiFetch<{ message: string }>('/api/platforms/xiaohongshu/unbind', {
+      method: 'DELETE',
+    }),
+
   push: (platformId: string, adaptedContentId?: number, content?: unknown) =>
     apiFetch<{ message: string; content_id?: string }>(
       `/api/platform/push?platform=${platformId}`,

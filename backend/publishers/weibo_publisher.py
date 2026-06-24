@@ -19,18 +19,31 @@ class WeiboPublisherError(Exception):
     pass
 
 
-def _find_chrome() -> bool:
-    """检测 Chrome 是否可用"""
+def _find_chrome() -> Optional[str]:
+    """检测 Chrome/Chromium/Edge 是否可用，返回可执行文件路径或 None"""
     if WEIBO_CHROME_PATH:
-        return os.path.exists(WEIBO_CHROME_PATH)
+        return WEIBO_CHROME_PATH if os.path.exists(WEIBO_CHROME_PATH) else None
     possible_paths = [
+        # Google Chrome
         "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
         "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
         os.path.expandvars(r"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"),
+        # Microsoft Edge (Chromium-based, supports CDP)
+        "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+        "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
+        os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\Edge\Application\msedge.exe"),
+        # Linux / macOS
         "/usr/bin/google-chrome",
+        "/usr/bin/chromium",
+        "/usr/bin/chromium-browser",
+        "/usr/bin/microsoft-edge",
         "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+        "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
     ]
-    return any(os.path.exists(p) for p in possible_paths)
+    for p in possible_paths:
+        if os.path.exists(p):
+            return p
+    return None
 
 
 def _find_bun_command() -> str | None:
@@ -47,8 +60,9 @@ def _find_bun_command() -> str | None:
 
 
 def check_runtime() -> dict:
-    """检查运行时环境（Chrome + bun + 脚本依赖）"""
-    chrome_ready = _find_chrome()
+    """检查运行时环境（Chrome/Edge + bun + 脚本依赖）"""
+    chrome_path = _find_chrome()
+    chrome_ready = chrome_path is not None
     bun_cmd = _find_bun_command()
     bun_ready = bun_cmd is not None
 
@@ -63,7 +77,7 @@ def check_runtime() -> dict:
         "chrome_ready": chrome_ready,
         "bun_ready": bun_ready,
         "deps_ready": deps_ready,
-        "chrome_path": WEIBO_CHROME_PATH or "auto-detected",
+        "chrome_path": chrome_path or WEIBO_CHROME_PATH or "not found",
         "bun_command": bun_cmd or "not found",
         "scripts_dir": str(scripts_dir) if scripts_dir else "not configured",
     }
@@ -130,27 +144,17 @@ def profile_has_session(profile_dir: Path) -> bool:
 
 
 def open_login_browser(profile_dir: Path) -> None:
-    """打开浏览器进行微博登录"""
-    chrome_path = WEIBO_CHROME_PATH
+    """打开 Chrome/Edge 浏览器进行微博登录"""
+    chrome_path = _find_chrome()
     if not chrome_path:
-        # 自动查找 Chrome
-        possible_paths = [
-            "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-            "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
-            "/usr/bin/google-chrome",
-            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-        ]
-        for path in possible_paths:
-            if os.path.exists(path):
-                chrome_path = path
-                break
-        else:
-            raise WeiboPublisherError("无法找到 Chrome 浏览器，请手动指定 WEIBO_CHROME_PATH")
+        raise WeiboPublisherError(
+            "无法找到 Chrome 或 Edge 浏览器，请安装浏览器或设置 WEIBO_CHROME_PATH 环境变量"
+        )
 
     # 创建配置目录
     profile_dir.mkdir(parents=True, exist_ok=True)
 
-    # 启动 Chrome
+    # 启动浏览器
     subprocess.Popen([
         chrome_path,
         f"--remote-debugging-port=9222",

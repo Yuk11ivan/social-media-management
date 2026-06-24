@@ -32,6 +32,7 @@ from auth.dependencies import get_current_user
 from platforms.router import router as platforms_router
 from platforms.service import get_user_wechat_api, get_user_weibo_profile_dir
 from publishers.weibo_publisher import WeiboPublisherError, publish_weibo
+from publishers.xiaohongshu_publisher import XiaohongshuPublisherError, publish_xiaohongshu
 from image_service import extract_visual_keywords, generate_image
 
 # ===== 文件存储配置 =====
@@ -531,7 +532,56 @@ async def push_to_platform(
             )
             raise HTTPException(status_code=500, detail=f"推送失败: {str(e)}")
 
-    # 其他平台 Mock
+    if platform == "xiaohongshu":
+        try:
+            result = publish_xiaohongshu(
+                user_id=user_id,
+                content=content.content,
+                title=content.title,
+                images=content.images,
+                topics=content.hashtags,
+            )
+
+            storage_service.log_push(
+                adapted_content_id=adapted_content_id,
+                platform=platform,
+                platform_name=platform_name,
+                status="success",
+                content_id=result.get("content_id", ""),
+                message=result.get("message", "小红书笔记已填入编辑器"),
+                user_id=user_id,
+            )
+            return {
+                "success": True,
+                "message": result.get("message", f"已成功推送至{platform_name}"),
+                "platform": platform,
+                "content_id": result.get("content_id"),
+            }
+
+        except XiaohongshuPublisherError as e:
+            storage_service.log_push(
+                adapted_content_id=adapted_content_id,
+                platform=platform,
+                platform_name=platform_name,
+                status="failed",
+                message=str(e),
+                user_id=user_id,
+            )
+            raise HTTPException(status_code=500, detail=f"小红书推送失败: {e}")
+        except HTTPException:
+            raise
+        except Exception as e:
+            storage_service.log_push(
+                adapted_content_id=adapted_content_id,
+                platform=platform,
+                platform_name=platform_name,
+                status="failed",
+                message=str(e),
+                user_id=user_id,
+            )
+            raise HTTPException(status_code=500, detail=f"推送失败: {str(e)}")
+
+    # 其他平台 Mock（如抖音等暂未对接的平台）
     try:
         content_id = f"mock_{datetime.now().timestamp()}"
         storage_service.log_push(

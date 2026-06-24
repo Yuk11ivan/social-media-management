@@ -16,6 +16,11 @@ interface PlatformState {
   testWeibo: () => Promise<{ success: boolean; message: string }>;
   openWeiboLogin: () => Promise<{ success: boolean; message: string }>;
   unbindWeibo: () => Promise<void>;
+  fetchXiaohongshuStatus: () => Promise<void>;
+  bindXiaohongshu: (accountName?: string, profileDir?: string) => Promise<void>;
+  testXiaohongshu: () => Promise<{ success: boolean; message: string }>;
+  openXiaohongshuLogin: () => Promise<{ success: boolean; message: string }>;
+  unbindXiaohongshu: () => Promise<void>;
   fetchAllStatuses: () => Promise<void>;
   setIsLoading: (v: boolean) => void;
 }
@@ -31,7 +36,7 @@ function defaultStatus(platformId: PlatformId): PlatformBindStatus {
 export const usePlatformStore = create<PlatformState>()((set, get) => ({
   statuses: {
     wechat: defaultStatus('wechat'),
-    xiaohongshu: { ...defaultStatus('xiaohongshu'), accountName: '即将上线' },
+    xiaohongshu: defaultStatus('xiaohongshu'),
     douyin: { ...defaultStatus('douyin'), accountName: '即将上线' },
     weibo: defaultStatus('weibo'),
   },
@@ -154,8 +159,73 @@ export const usePlatformStore = create<PlatformState>()((set, get) => ({
     }
   },
 
+  fetchXiaohongshuStatus: async () => {
+    set({ isLoading: true });
+    try {
+      const data = await platformApi.getXiaohongshuStatus();
+      set((s) => ({
+        statuses: {
+          ...s.statuses,
+          xiaohongshu: {
+            platformId: 'xiaohongshu',
+            bound: data.bound,
+            connected: data.connected,
+            accountName: data.account_name,
+            appId: data.profile_dir,
+          },
+        },
+      }));
+    } catch {
+      // keep default
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  bindXiaohongshu: async (accountName, profileDir) => {
+    set({ isBinding: true });
+    try {
+      await platformApi.bindXiaohongshu({
+        account_name: accountName,
+        profile_dir: profileDir,
+      });
+      await get().fetchXiaohongshuStatus();
+    } finally {
+      set({ isBinding: false });
+    }
+  },
+
+  testXiaohongshu: async () => {
+    set({ isTesting: true });
+    try {
+      return await platformApi.testXiaohongshu();
+    } finally {
+      set({ isTesting: false });
+    }
+  },
+
+  openXiaohongshuLogin: async () => {
+    return await platformApi.openXiaohongshuLogin();
+  },
+
+  unbindXiaohongshu: async () => {
+    set({ isLoading: true });
+    try {
+      await platformApi.unbindXiaohongshu();
+      set((s) => ({
+        statuses: { ...s.statuses, xiaohongshu: defaultStatus('xiaohongshu') },
+      }));
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
   fetchAllStatuses: async () => {
-    await Promise.all([get().fetchWechatStatus(), get().fetchWeiboStatus()]);
+    await Promise.all([
+      get().fetchWechatStatus(),
+      get().fetchWeiboStatus(),
+      get().fetchXiaohongshuStatus(),
+    ]);
   },
 
   setIsLoading: (v) => set({ isLoading: v }),
