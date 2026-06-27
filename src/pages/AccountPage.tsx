@@ -68,14 +68,14 @@ export default function AccountPage() {
             animate={{ opacity: 1, y: 0 }}
             className="text-center"
           >
-            <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-6">
-              <Sparkles className="w-10 h-10 text-emerald-500" />
+            <div className="w-20 h-20 rounded-full bg-gilt-400/25 flex items-center justify-center mx-auto mb-6">
+              <Sparkles className="w-10 h-10 text-gilt-600" />
             </div>
-            <h1 className="text-2xl font-heading font-bold text-primary mb-2">
+            <h1 className="text-2xl font-heading font-bold text-crystal-900 mb-2">
               欢迎回来，{user.nickname || user.email}
             </h1>
-            <p className="text-sm text-secondary mb-8">
-              你的 AI 运营助手已就绪
+            <p className="text-sm text-crystal-600 mb-8">
+              Altus 奥途智营 · AI 运营助手已就绪
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Button onClick={() => navigate('/generate')} icon={<ArrowRight className="w-4 h-4" />}>
@@ -106,25 +106,28 @@ export default function AccountPage() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-10"
         >
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-100 mb-5">
-            <Sparkles className="w-7 h-7 text-emerald-500" />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gilt-400/20 mb-5">
+            <Sparkles className="w-8 h-8 text-gilt-600" />
           </div>
-          <h1 className="text-2xl font-heading font-bold text-primary mb-2">
-            AI 运营工坊
+          <h1 className="text-2xl font-heading font-bold text-crystal-900 mb-1">
+            Altus
           </h1>
-          <p className="text-sm text-secondary">
+          <p className="text-sm font-medium text-crystal-600 mb-1">
+            奥途智营
+          </p>
+          <p className="text-xs text-crystal-500">
             多平台内容智能运营，让发布更简单
           </p>
         </motion.div>
 
         {/* Tab switch */}
-        <div className="flex mb-8 bg-gray-100 rounded-xl p-1">
+        <div className="flex mb-8 bg-crystal-100 rounded-xl p-1">
           {(['login', 'register'] as Tab[]).map((t) => (
             <button
               key={t}
               onClick={() => { setTab(t); setError(''); }}
               className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 relative ${
-                tab === t ? 'text-primary' : 'text-muted hover:text-secondary'
+                tab === t ? 'text-crystal-900' : 'text-crystal-500 hover:text-crystal-600'
               }`}
             >
               {tab === t && (
@@ -155,16 +158,16 @@ export default function AccountPage() {
             {/* Nickname (register only) */}
             {tab === 'register' && (
               <div>
-                <label className="block text-sm font-medium text-secondary mb-1.5">
-                  昵称 <span className="text-muted font-normal">（选填）</span>
+                <label className="block text-sm font-medium text-crystal-600 mb-1.5">
+                  昵称 <span className="text-crystal-500 font-normal">（选填）</span>
                 </label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-crystal-500" />
                   <input
                     type="text"
                     value={nickname}
                     onChange={(e) => setNickname(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-white text-sm text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent transition-all"
+                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-crystal-200 bg-white text-sm text-crystal-900 placeholder:text-crystal-500 focus:outline-none focus:ring-2 focus:ring-gilt-400/20 focus:border-gilt-400/40 transition-all"
                     placeholder="你的名字"
                   />
                 </div>
@@ -173,15 +176,15 @@ export default function AccountPage() {
 
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-secondary mb-1.5">邮箱</label>
+              <label className="block text-sm font-medium text-crystal-600 mb-1.5">邮箱</label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-crystal-500" />
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-white text-sm text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent transition-all"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-crystal-200 bg-white text-sm text-crystal-900 placeholder:text-crystal-500 focus:outline-none focus:ring-2 focus:ring-gilt-400/20 focus:border-gilt-400/40 transition-all"
                   placeholder="your@email.com"
                 />
               </div>
@@ -189,27 +192,27 @@ export default function AccountPage() {
 
             {/* Password */}
             <div>
-              <label className="block text-sm font-medium text-secondary mb-1.5">密码</label>
+              <label className="block text-sm font-medium text-crystal-600 mb-1.5">密码</label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-crystal-500" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   required
                   minLength={6}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-12 py-3 rounded-xl border border-border bg-white text-sm text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent transition-all"
+                  className="w-full pl-10 pr-12 py-3 rounded-xl border border-crystal-200 bg-white text-sm text-crystal-900 placeholder:text-crystal-500 focus:outline-none focus:ring-2 focus:ring-gilt-400/20 focus:border-gilt-400/40 transition-all"
                   placeholder={tab === 'register' ? '至少6位密码' : '输入密码'}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-gray-100 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-crystal-100 transition-colors"
                 >
                   {showPassword ? (
-                    <EyeOff className="w-4 h-4 text-muted" />
+                    <EyeOff className="w-4 h-4 text-crystal-500" />
                   ) : (
-                    <Eye className="w-4 h-4 text-muted" />
+                    <Eye className="w-4 h-4 text-crystal-500" />
                   )}
                 </button>
               </div>
@@ -237,14 +240,14 @@ export default function AccountPage() {
             </Button>
 
             {/* Switch text */}
-            <p className="text-center text-sm text-muted pt-2">
+            <p className="text-center text-sm text-crystal-500 pt-2">
               {tab === 'login' ? (
                 <>
                   还没有账号？{' '}
                   <button
                     type="button"
                     onClick={() => setTab('register')}
-                    className="text-emerald-500 font-medium hover:text-emerald-600 transition-colors"
+                    className="text-gilt-600 font-medium hover:text-gilt-700 transition-colors"
                   >
                     立即注册
                   </button>
@@ -255,7 +258,7 @@ export default function AccountPage() {
                   <button
                     type="button"
                     onClick={() => setTab('login')}
-                    className="text-emerald-500 font-medium hover:text-emerald-600 transition-colors"
+                    className="text-gilt-600 font-medium hover:text-gilt-700 transition-colors"
                   >
                     去登录
                   </button>

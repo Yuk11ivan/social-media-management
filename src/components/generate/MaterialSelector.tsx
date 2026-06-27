@@ -94,17 +94,17 @@ export default function MaterialSelector({ selected, onSelect, onClose }: Props)
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.95, opacity: 0, y: 20 }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-2xl shadow-2xl border border-border w-full max-w-2xl max-h-[80vh] overflow-hidden"
+        className="bg-white rounded-2xl shadow-2xl border border-crystal-200 w-full max-w-2xl max-h-[80vh] overflow-hidden"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-crystal-200">
           <div className="flex items-center gap-2">
-            <FolderOpen className="w-5 h-5 text-emerald-500" />
+            <FolderOpen className="w-5 h-5 text-gilt-500" />
             <h3 className="text-lg font-heading font-semibold">从素材库选择</h3>
           </div>
           <button
             onClick={onClose}
-            className="text-sm text-muted hover:text-secondary transition-colors"
+            className="text-sm text-crystal-500 hover:text-crystal-600 transition-colors"
           >
             取消
           </button>
@@ -118,9 +118,9 @@ export default function MaterialSelector({ selected, onSelect, onClose }: Props)
             </div>
           ) : materials.length === 0 ? (
             <div className="text-center py-12">
-              <Image className="w-10 h-10 text-muted mx-auto mb-2" />
-              <p className="text-sm text-secondary">素材库为空</p>
-              <p className="text-xs text-muted mt-1">请先在素材管理页面上传图片</p>
+              <Image className="w-10 h-10 text-crystal-500 mx-auto mb-2" />
+              <p className="text-sm text-crystal-600">素材库为空</p>
+              <p className="text-xs text-crystal-500 mt-1">请先在素材管理页面上传图片</p>
             </div>
           ) : (
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
@@ -134,7 +134,7 @@ export default function MaterialSelector({ selected, onSelect, onClose }: Props)
                     className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all ${
                       isSelected
                         ? 'border-emerald-500 ring-2 ring-emerald-200'
-                        : 'border-border hover:border-emerald-300'
+                        : 'border-crystal-200 hover:border-gilt-300'
                     }`}
                   >
                     <img
@@ -147,8 +147,8 @@ export default function MaterialSelector({ selected, onSelect, onClose }: Props)
                       }}
                     />
                     {isSelected && (
-                      <div className="absolute inset-0 bg-emerald-500/20 flex items-center justify-center">
-                        <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center">
+                      <div className="absolute inset-0 bg-gilt-1000/20 flex items-center justify-center">
+                        <div className="w-8 h-8 rounded-full bg-gilt-1000 flex items-center justify-center">
                           <Check className="w-5 h-5 text-white" />
                         </div>
                       </div>
@@ -164,8 +164,8 @@ export default function MaterialSelector({ selected, onSelect, onClose }: Props)
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-border flex items-center justify-between">
-          <p className="text-xs text-muted">
+        <div className="px-6 py-4 border-t border-crystal-200 flex items-center justify-between">
+          <p className="text-xs text-crystal-500">
             {selectedIds.size > 0
               ? `已选择 ${selectedIds.size} 张`
               : '点击图片选择素材'}
@@ -173,14 +173,14 @@ export default function MaterialSelector({ selected, onSelect, onClose }: Props)
           <div className="flex gap-2">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm text-secondary hover:text-primary transition-colors"
+              className="px-4 py-2 text-sm text-crystal-600 hover:text-crystal-900 transition-colors"
             >
               取消
             </button>
             <button
               onClick={handleConfirm}
               disabled={selectedIds.size === 0}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gilt-1000 text-white text-sm font-medium hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
             >
               <Plus className="w-4 h-4" />
               添加到配图

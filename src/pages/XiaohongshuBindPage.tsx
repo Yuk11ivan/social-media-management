@@ -104,7 +104,7 @@ export default function XiaohongshuBindPage() {
         {/* 返回 */}
         <Link
           to="/platforms"
-          className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-secondary transition-colors mb-8"
+          className="inline-flex items-center gap-1.5 text-sm text-crystal-500 hover:text-crystal-600 transition-colors mb-8"
         >
           <ArrowLeft className="w-4 h-4" /> 返回平台管理
         </Link>
@@ -120,8 +120,8 @@ export default function XiaohongshuBindPage() {
             <Heart className="w-7 h-7" fill="white" />
           </motion.div>
           <div>
-            <h1 className="text-2xl font-heading font-bold text-primary">绑定小红书账号</h1>
-            <p className="text-sm text-secondary mt-0.5">
+            <h1 className="text-2xl font-heading font-bold text-crystal-900">绑定小红书账号</h1>
+            <p className="text-sm text-crystal-600 mt-0.5">
               Chrome 浏览器自动填入笔记，人工审核后手动发布
             </p>
           </div>
@@ -137,7 +137,7 @@ export default function XiaohongshuBindPage() {
                   <div className="w-7 h-7 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center text-xs font-bold">
                     {i + 1}
                   </div>
-                  <span className="text-sm font-medium text-primary">{label}</span>
+                  <span className="text-sm font-medium text-crystal-900">{label}</span>
                   {i < 2 && <div className="w-6 h-px bg-border hidden sm:block" />}
                 </div>
               ))}
@@ -147,15 +147,15 @@ export default function XiaohongshuBindPage() {
             <Card>
               <form onSubmit={handleBind} className="space-y-5">
                 <div>
-                  <label className="block text-sm font-medium text-primary mb-1.5">
-                    账号备注 <span className="text-muted font-normal">（选填）</span>
+                  <label className="block text-sm font-medium text-crystal-900 mb-1.5">
+                    账号备注 <span className="text-crystal-500 font-normal">（选填）</span>
                   </label>
                   <input
                     type="text"
                     value={accountName}
                     onChange={(e) => setAccountName(e.target.value)}
                     maxLength={20}
-                    className="w-full px-4 py-2.5 rounded-xl border border-border bg-white text-sm
+                    className="w-full px-4 py-2.5 rounded-xl border border-crystal-200 bg-white text-sm
                       focus:outline-none focus:ring-2 focus:ring-rose-400 focus:border-transparent"
                     placeholder="例如：美妆号"
                   />
@@ -164,25 +164,25 @@ export default function XiaohongshuBindPage() {
                 <button
                   type="button"
                   onClick={() => setShowAdvanced(!showAdvanced)}
-                  className="text-xs text-muted hover:text-secondary"
+                  className="text-xs text-crystal-500 hover:text-crystal-600"
                 >
                   {showAdvanced ? '收起高级选项' : '高级选项 ▸'}
                 </button>
 
                 {showAdvanced && (
-                  <div className="p-4 rounded-xl bg-gray-50 border border-border">
-                    <label className="block text-sm font-medium text-primary mb-1.5">
+                  <div className="p-4 rounded-xl bg-crystal-50 border border-crystal-200">
+                    <label className="block text-sm font-medium text-crystal-900 mb-1.5">
                       Chrome Profile 路径
                     </label>
                     <input
                       type="text"
                       value={profileDir}
                       onChange={(e) => setProfileDir(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl border border-border bg-white text-sm
+                      className="w-full px-4 py-2.5 rounded-xl border border-crystal-200 bg-white text-sm
                         focus:outline-none focus:ring-2 focus:ring-rose-400 focus:border-transparent"
                       placeholder="留空自动创建"
                     />
-                    <p className="text-xs text-muted mt-2">
+                    <p className="text-xs text-crystal-500 mt-2">
                       系统自动在 <code className="text-xs bg-gray-200 px-1 rounded">backend/xiaohongshu_profiles/</code> 创建
                     </p>
                   </div>
@@ -217,21 +217,21 @@ export default function XiaohongshuBindPage() {
             {/* 状态卡片 */}
             <Card>
               <div className="flex items-center gap-4 mb-5">
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isConnected ? 'bg-emerald-50' : 'bg-amber-50'}`}>
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isConnected ? 'bg-gilt-100' : 'bg-amber-50'}`}>
                   {isConnected ? (
-                    <CheckCircle className="w-6 h-6 text-emerald-500" />
+                    <CheckCircle className="w-6 h-6 text-gilt-500" />
                   ) : (
                     <AlertTriangle className="w-6 h-6 text-amber-500" />
                   )}
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-heading font-semibold text-primary">
+                    <h3 className="text-lg font-heading font-semibold text-crystal-900">
                       {isConnected ? '登录态正常' : '待完成登录'}
                     </h3>
                     <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
                   </div>
-                  <p className="text-sm text-secondary mt-0.5">
+                  <p className="text-sm text-crystal-600 mt-0.5">
                     {isConnected
                       ? '一切就绪，可以开始推送笔记了'
                       : '请打开浏览器扫码登录小红书'}
@@ -240,8 +240,8 @@ export default function XiaohongshuBindPage() {
               </div>
 
               {status.accountName && (
-                <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-gray-50 text-sm">
-                  <span className="text-muted">账号备注：</span>
+                <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-crystal-50 text-sm">
+                  <span className="text-crystal-500">账号备注：</span>
                   <span className="font-medium">{status.accountName}</span>
                 </div>
               )}
@@ -278,17 +278,17 @@ export default function XiaohongshuBindPage() {
 
             {/* 已连接的快捷入口 */}
             {isConnected && (
-              <Card className="border-emerald-200 bg-emerald-50/30">
+              <Card className="border-gilt-300 bg-gilt-100/30">
                 <div className="flex items-start gap-3">
-                  <Sparkles className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                  <Sparkles className="w-5 h-5 text-gilt-500 flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-sm font-semibold text-primary">绑定完成！</p>
-                    <p className="text-xs text-secondary mt-1">
+                    <p className="text-sm font-semibold text-crystal-900">绑定完成！</p>
+                    <p className="text-xs text-crystal-600 mt-1">
                       前往内容生成页面，选择小红书平台，AI 将自动生成种草笔记。
                     </p>
                     <Link
                       to="/generate"
-                      className="inline-flex items-center gap-1 mt-3 text-sm font-medium text-emerald-600 hover:text-emerald-700"
+                      className="inline-flex items-center gap-1 mt-3 text-sm font-medium text-gilt-600 hover:text-gilt-700"
                     >
                       开始内容生成 →
                     </Link>
@@ -299,7 +299,7 @@ export default function XiaohongshuBindPage() {
 
             {/* 平台限制 */}
             <Card>
-              <h3 className="text-sm font-heading font-semibold text-primary mb-3">小红书平台限制</h3>
+              <h3 className="text-sm font-heading font-semibold text-crystal-900 mb-3">小红书平台限制</h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
                 {[
                   ['标题字数', '≤ 20 字'],
@@ -308,9 +308,9 @@ export default function XiaohongshuBindPage() {
                   ['话题标签', '≤ 5 个'],
                   ['发布间隔', '≥ 5 分钟'],
                 ].map(([label, value]) => (
-                  <div key={label} className="px-3 py-2 rounded-lg bg-gray-50">
-                    <span className="text-muted">{label}</span>
-                    <span className="block font-mono font-medium text-primary mt-0.5">{value}</span>
+                  <div key={label} className="px-3 py-2 rounded-lg bg-crystal-50">
+                    <span className="text-crystal-500">{label}</span>
+                    <span className="block font-mono font-medium text-crystal-900 mt-0.5">{value}</span>
                   </div>
                 ))}
               </div>

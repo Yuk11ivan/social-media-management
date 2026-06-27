@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, Search, Trash2, ExternalLink, Cloud, RefreshCw } from 'lucide-react';
 import PageTransition from '../components/ui/PageTransition';
-import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import EmptyState from '../components/ui/EmptyState';
 import { useMaterialStore } from '../store/materialStore';
@@ -87,20 +86,20 @@ export default function MaterialPage() {
 
   return (
     <PageTransition>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="px-6 py-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-10"
+          className="mb-8"
         >
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-heading font-bold text-primary mb-2">
-                <span className="inline-block mr-2">🖼️</span>素材管理
+              <h1 className="text-3xl font-heading font-bold text-crystal-900 mb-2">
+                素材管理
               </h1>
-              <p className="text-sm text-secondary">
-                管理图片素材，内容生成时可直接选用
+              <p className="text-sm text-crystal-500">
+                上传并管理你的视觉素材
               </p>
             </div>
             <div className="flex gap-2">
@@ -137,16 +136,16 @@ export default function MaterialPage() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="mb-6"
+          className="mb-8"
         >
           <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-crystal-500" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="搜索素材名称..."
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent transition-all"
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-crystal-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-gilt-400 focus:border-transparent transition-all"
             />
           </div>
         </motion.div>
@@ -158,30 +157,30 @@ export default function MaterialPage() {
           onDrop={handleDrop}
           className={`mb-8 rounded-2xl border-2 border-dashed transition-all duration-300 cursor-pointer ${
             dragging
-              ? 'border-emerald-400 bg-emerald-50/50 scale-[1.01]'
-              : 'border-border hover:border-emerald-300'
+              ? 'border-gilt-400 bg-gilt-100/50 scale-[1.01]'
+              : 'border-crystal-200 hover:border-gilt-300'
           }`}
           onClick={() => fileInputRef.current?.click()}
         >
-          <div className="flex flex-col items-center py-10">
+          <div className="flex flex-col items-center py-12">
             <motion.div
               animate={dragging ? { scale: 1.1, y: -4 } : { scale: 1, y: 0 }}
-              className="w-16 h-16 rounded-2xl bg-emerald-50 flex items-center justify-center mb-3"
+              className="w-16 h-16 rounded-2xl bg-gilt-100 flex items-center justify-center mb-3"
             >
-              <Cloud className={`w-8 h-8 ${dragging ? 'text-emerald-500' : 'text-muted'} transition-colors`} />
+              <Cloud className={`w-8 h-8 ${dragging ? 'text-gilt-500' : 'text-crystal-500'} transition-colors`} />
             </motion.div>
-            <p className="text-sm text-secondary font-medium">
-              {dragging ? '✨ 释放以上传' : '拖拽图片到此处，或点击选择'}
+            <p className="text-sm text-crystal-600 font-medium">
+              {dragging ? '释放文件以上传' : '拖拽图片到此处，或点击选择'}
             </p>
-            <p className="text-xs text-muted mt-1">支持 JPG, PNG, GIF, WebP — 单文件最大 10MB</p>
+            <p className="text-xs text-crystal-500 mt-1">支持 JPG, PNG, GIF, WebP — 单文件最大 10MB</p>
           </div>
         </div>
 
         {/* Stats */}
-        <div className="flex items-center gap-4 mb-6 text-xs text-muted">
+        <div className="flex items-center gap-4 mb-6 pt-4 border-t border-crystal-200/60 text-xs text-crystal-500">
           <span>共 {materials.length} 个素材</span>
           {searchQuery && (
-            <span className="text-emerald-600">
+            <span className="text-gilt-600">
               筛选结果: {filteredMaterials.length} 个
             </span>
           )}
@@ -193,7 +192,7 @@ export default function MaterialPage() {
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
-              className="w-10 h-10 rounded-full border-2 border-emerald-200 border-t-emerald-500"
+              className="w-10 h-10 rounded-full border-2 border-gilt-300 border-t-gilt-500"
             />
           </div>
         ) : filteredMaterials.length === 0 ? (
@@ -217,7 +216,7 @@ export default function MaterialPage() {
             variants={staggerContainer}
             initial="hidden"
             animate="visible"
-            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"
+            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5"
           >
             <AnimatePresence>
               {filteredMaterials.map((m) => (
@@ -227,13 +226,13 @@ export default function MaterialPage() {
                   layout
                   exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
                 >
-                  <Card
-                    className="overflow-hidden group cursor-pointer"
-                    padding={false}
+                  <motion.div
+                    whileHover={{ y: -2 }}
+                    className="rounded-2xl card-premium overflow-hidden group cursor-pointer"
                     onClick={() => setPreviewImg(m.file_path)}
                   >
                     {/* Image preview */}
-                    <div className="relative aspect-square bg-gray-100 overflow-hidden">
+                    <div className="relative aspect-square bg-crystal-100 overflow-hidden">
                       <img
                         src={m.file_path}
                         alt={m.name}
@@ -253,7 +252,7 @@ export default function MaterialPage() {
                           className="p-2.5 rounded-xl bg-white/90 hover:bg-white transition-colors"
                           title="查看原图"
                         >
-                          <ExternalLink className="w-4 h-4 text-primary" />
+                          <ExternalLink className="w-4 h-4 text-crystal-900" />
                         </a>
                         <button
                           onClick={(e) => handleDelete(m.id, e)}
@@ -266,19 +265,19 @@ export default function MaterialPage() {
                     </div>
                     {/* Info */}
                     <div className="p-3">
-                      <p className="text-sm font-medium text-primary truncate" title={m.name}>
+                      <p className="text-sm font-medium text-crystal-900 truncate" title={m.name}>
                         {m.name}
                       </p>
                       <div className="flex items-center justify-between mt-1">
-                        <span className="text-xs text-muted">
+                        <span className="text-xs text-crystal-500">
                           {formatSize(m.file_size)}
                         </span>
-                        <span className="text-[10px] text-emerald-500 font-medium px-1.5 py-0.5 rounded bg-emerald-50">
+                        <span className="text-[10px] text-gilt-600 font-medium px-1.5 py-0.5 rounded bg-gilt-50">
                           {m.file_type?.split('/')[1]?.toUpperCase() || 'IMG'}
                         </span>
                       </div>
                     </div>
-                  </Card>
+                  </motion.div>
                 </motion.div>
               ))}
             </AnimatePresence>

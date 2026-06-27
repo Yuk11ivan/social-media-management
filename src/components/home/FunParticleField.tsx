@@ -13,12 +13,7 @@ interface Particle {
 }
 
 const PLATFORM_COLORS = [
-  '#07C160', // WeChat green
-  '#FF2442', // Xiaohongshu red
-  '#000000', // Douyin black
-  '#E6162D', // Weibo red
-  '#10b981', // Accent emerald
-  '#34d399', // Light emerald
+  '#D4BF8A', '#BFA76A', '#C4A870', '#EAD9B2', '#A89055', '#F5ECD8',
 ];
 
 const PARTICLE_COUNT = 100;
@@ -162,7 +157,7 @@ export default function FunParticleField() {
             ctx.beginPath();
             ctx.moveTo(particles[i].x, particles[i].y);
             ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.strokeStyle = '#10b981';
+            ctx.strokeStyle = '#D4BF8A';
             ctx.globalAlpha = alpha;
             ctx.lineWidth = 0.5;
             ctx.stroke();

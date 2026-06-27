@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, Copy, ChevronDown, ChevronUp, Search } from 'lucide-react';
 import PageTransition from '../components/ui/PageTransition';
-import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
 import EmptyState from '../components/ui/EmptyState';
 import { useAuthStore } from '../store/authStore';
@@ -52,6 +51,8 @@ export default function HistoryPage() {
     navigator.clipboard.writeText(text).then(() => toast('已复制', 'success'));
   };
 
+  const LIVE_PLATFORMS = PLATFORM_ORDER.filter(pid => PLATFORMS[pid].apiStatus === 'live');
+
   const filteredItems = items.filter((item) => {
     const matchSearch = !searchQuery ||
       item.original_text.toLowerCase().includes(searchQuery.toLowerCase());
@@ -62,7 +63,7 @@ export default function HistoryPage() {
 
   return (
     <PageTransition>
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="px-6 py-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -71,11 +72,11 @@ export default function HistoryPage() {
         >
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-heading font-bold text-primary mb-2">
+              <h1 className="text-3xl font-heading font-bold text-crystal-900 mb-2">
                 历史记录
               </h1>
-              <p className="text-sm text-secondary">
-                浏览和管理已生成保存的内容
+              <p className="text-sm text-crystal-500/70">
+                已保存的内容
               </p>
             </div>
           </div>
@@ -89,32 +90,32 @@ export default function HistoryPage() {
           className="flex flex-col sm:flex-row gap-3 mb-8"
         >
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-crystal-500" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="搜索内容..."
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-crystal-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-gilt-400 focus:border-transparent"
             />
           </div>
           <div className="flex gap-1.5 flex-wrap">
             <button
               onClick={() => setPlatformFilter('all')}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                platformFilter === 'all' ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-muted hover:bg-gray-200'
+                platformFilter === 'all' ? 'bg-gilt-100 text-gilt-700 border border-gilt-400' : 'bg-crystal-100 text-crystal-500 hover:bg-crystal-200 border border-transparent'
               }`}
             >
               全部
             </button>
-            {PLATFORM_ORDER.map((pid) => {
+            {LIVE_PLATFORMS.map((pid) => {
               const p = PLATFORMS[pid];
               return (
                 <button
                   key={pid}
                   onClick={() => setPlatformFilter(pid)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                    platformFilter === pid ? 'text-white' : 'bg-gray-100 text-muted hover:bg-gray-200'
+                    platformFilter === pid ? 'text-white' : 'bg-crystal-100 text-crystal-500 hover:bg-crystal-200'
                   }`}
                   style={platformFilter === pid ? { backgroundColor: p.color } : {}}
                 >
@@ -128,12 +129,12 @@ export default function HistoryPage() {
         {/* Items List */}
         {isLoading ? (
           <div className="flex justify-center py-16">
-            <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-gilt-500 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : filteredItems.length === 0 ? (
           <EmptyState
-            title={items.length === 0 ? '还没有保存的内容' : '没有匹配的记录'}
-            description="生成内容后点击「保存」，即可在这里查看"
+            title={items.length === 0 ? '暂无保存内容' : '无匹配记录'}
+            description="生成后保存即可在此查看"
           />
         ) : (
           <motion.div
@@ -152,21 +153,21 @@ export default function HistoryPage() {
                     layout
                     exit={{ opacity: 0, y: -10, transition: { duration: 0.2 } }}
                   >
-                    <Card>
+                    <div className="card-premium rounded-2xl p-6">
                       {/* Item header */}
                       <button
                         onClick={() => setExpandedId(isExpanded ? null : item.id)}
                         className="w-full flex items-start justify-between gap-4 text-left"
                       >
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-primary line-clamp-2 mb-2">
+                          <p className="text-sm font-medium text-crystal-900 line-clamp-2 mb-2">
                             {item.original_text}
                           </p>
                           <div className="flex items-center gap-2 flex-wrap">
                             {item.adapted_contents?.map((ac) => (
                               <Badge key={ac.id} platform={ac.platform} size="sm" />
                             ))}
-                            <span className="text-xs text-muted">
+                            <span className="text-xs text-crystal-500">
                               {new Date(item.created_at).toLocaleString('zh-CN')}
                             </span>
                           </div>
@@ -176,12 +177,12 @@ export default function HistoryPage() {
                             onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
                             className="p-1.5 rounded-lg hover:bg-red-50 transition-colors"
                           >
-                            <Trash2 className="w-4 h-4 text-muted hover:text-red-500" />
+                            <Trash2 className="w-4 h-4 text-crystal-500 hover:text-red-500" />
                           </button>
                           {isExpanded ? (
-                            <ChevronUp className="w-4 h-4 text-muted" />
+                            <ChevronUp className="w-4 h-4 text-crystal-500" />
                           ) : (
-                            <ChevronDown className="w-4 h-4 text-muted" />
+                            <ChevronDown className="w-4 h-4 text-crystal-500" />
                           )}
                         </div>
                       </button>
@@ -195,24 +196,24 @@ export default function HistoryPage() {
                             exit={{ height: 0, opacity: 0 }}
                             className="overflow-hidden"
                           >
-                            <div className="mt-4 pt-4 border-t border-border space-y-4">
+                            <div className="mt-5 pt-5 border-t border-gilt-500/15 space-y-4">
                               {item.adapted_contents.map((ac) => (
-                                <div key={ac.id} className="p-3 rounded-xl bg-gray-50">
+                                <div key={ac.id} className="p-4 rounded-xl bg-white/60 backdrop-blur-sm border border-gilt-500/10 shadow-sm">
                                   <div className="flex items-center justify-between mb-2">
                                     <Badge platform={ac.platform} />
                                     <button
                                       onClick={() => handleCopy(`${ac.title}\n\n${ac.content}${ac.hashtags ? '\n\n' + ac.hashtags : ''}`)}
-                                      className="p-1 rounded-md hover:bg-gray-200 transition-colors"
+                                      className="p-1 rounded-md hover:bg-gilt-500/10 transition-colors"
                                     >
-                                      <Copy className="w-3.5 h-3.5 text-muted" />
+                                      <Copy className="w-3.5 h-3.5 text-crystal-500" />
                                     </button>
                                   </div>
-                                  <h5 className="font-medium text-sm text-primary mb-1">{ac.title}</h5>
-                                  <p className="text-xs text-secondary line-clamp-3 whitespace-pre-wrap">
+                                  <h5 className="font-medium text-sm text-crystal-900 mb-1">{ac.title}</h5>
+                                  <p className="text-xs text-crystal-600 line-clamp-3 whitespace-pre-wrap">
                                     {ac.content}
                                   </p>
                                   {ac.hashtags && (
-                                    <p className="text-xs text-accent-dark mt-1">{ac.hashtags}</p>
+                                    <p className="text-xs text-gilt-700 mt-1.5 font-medium">{ac.hashtags}</p>
                                   )}
                                 </div>
                               ))}
@@ -220,7 +221,7 @@ export default function HistoryPage() {
                           </motion.div>
                         )}
                       </AnimatePresence>
-                    </Card>
+                    </div>
                   </motion.div>
                 );
               })}

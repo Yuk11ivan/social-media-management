@@ -22,9 +22,7 @@ export default function App() {
           <Route path="/history" element={<HistoryPage />} />
           <Route path="/account" element={<AccountPage />} />
           <Route path="/platforms" element={<PlatformsPage />} />
-          <Route path="/platforms/wechat" element={<PlatformsPage />} />
-          <Route path="/platforms/weibo" element={<PlatformsPage />} />
-          <Route path="/platforms/xiaohongshu" element={<PlatformsPage />} />
+          <Route path="/platforms/:platform" element={<PlatformsPage />} />
         </Routes>
       </AppLayout>
     </ToastProvider>

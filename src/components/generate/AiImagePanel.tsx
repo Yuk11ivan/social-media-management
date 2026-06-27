@@ -75,7 +75,7 @@ export default function AiImagePanel({ content, title, onAddToImages, existingIm
         { label: '风格', value: keywords.style, icon: '🎨', color: 'from-purple-500/10 to-purple-500/5 border-purple-200 text-purple-700' },
         { label: '色调', value: keywords.color_tone, icon: '🌈', color: 'from-pink-500/10 to-pink-500/5 border-pink-200 text-pink-700' },
         { label: '主体', value: keywords.subject, icon: '✨', color: 'from-amber-500/10 to-amber-500/5 border-amber-200 text-amber-700' },
-        { label: '氛围', value: keywords.mood, icon: '💫', color: 'from-emerald-500/10 to-emerald-500/5 border-emerald-200 text-emerald-700' },
+        { label: '氛围', value: keywords.mood, icon: '💫', color: 'from-emerald-500/10 to-emerald-500/5 border-gilt-300 text-emerald-700' },
       ]
     : [];
 
@@ -241,7 +241,7 @@ export default function AiImagePanel({ content, title, onAddToImages, existingIm
                                 disabled={isAdded || isExisting}
                                 className={`w-full py-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1 transition-colors ${
                                   isAdded || isExisting
-                                    ? 'bg-emerald-500 text-white'
+                                    ? 'bg-gilt-1000 text-white'
                                     : 'bg-white/90 text-gray-700 hover:bg-white'
                                 }`}
                               >

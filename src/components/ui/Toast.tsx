@@ -40,13 +40,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const iconMap = {
-    success: <CheckCircle className="w-5 h-5 text-emerald-500" />,
+    success: <CheckCircle className="w-5 h-5 text-gilt-500" />,
     error: <XCircle className="w-5 h-5 text-red-500" />,
     info: <AlertCircle className="w-5 h-5 text-blue-500" />,
   };
 
   const bgMap = {
-    success: 'bg-emerald-50 border-emerald-200',
+    success: 'bg-gilt-100 border-gilt-300',
     error: 'bg-red-50 border-red-200',
     info: 'bg-blue-50 border-blue-200',
   };
@@ -66,12 +66,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg ${bgMap[t.type]} min-w-[280px] max-w-[400px]`}
             >
               {iconMap[t.type]}
-              <p className="text-sm font-medium text-primary flex-1">{t.message}</p>
+              <p className="text-sm font-medium text-crystal-900 flex-1">{t.message}</p>
               <button
                 onClick={() => removeToast(t.id)}
                 className="p-0.5 rounded hover:bg-black/5 transition-colors"
               >
-                <X className="w-4 h-4 text-muted" />
+                <X className="w-4 h-4 text-crystal-500" />
               </button>
             </motion.div>
           ))}

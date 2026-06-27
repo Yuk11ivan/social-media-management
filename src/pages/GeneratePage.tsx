@@ -32,7 +32,7 @@ export default function GeneratePage() {
     inputText, inputImages, selectedPlatforms, results,
     isGenerating, error, setInputText,
     addImage, removeImage, clearImages,
-    togglePlatform, generate, saveContent, reset, clearError,
+    togglePlatform, generate, saveContent, clearError,
   } = useContentStore();
   const { statuses, fetchAllStatuses } = usePlatformStore();
   const { setPendingItems } = usePushStore();
@@ -125,11 +125,6 @@ export default function GeneratePage() {
     navigate('/push');
   };
 
-  const handleReset = () => {
-    reset();
-    setShowAuthPrompt(false);
-  };
-
   const charCount = inputText.length;
   const groupedResults = PLATFORM_ORDER
     .filter(pid => selectedPlatforms.includes(pid))
@@ -137,26 +132,22 @@ export default function GeneratePage() {
 
   return (
     <PageTransition>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="px-6 py-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-10"
         >
-          <div className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-200 mb-4">
-            <Wand2 className="w-4 h-4 text-emerald-500" />
-            <span className="text-xs font-medium text-emerald-700">AI 智能生成</span>
+          <div className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-gilt-100 border border-gilt-300 mb-4">
+            <Wand2 className="w-4 h-4 text-gilt-500" />
+            <span className="text-xs font-medium text-gilt-700">AI 智能生成</span>
           </div>
-          <h1 className="text-3xl font-heading font-bold text-primary mb-3">
+          <h1 className="text-3xl font-heading font-bold text-crystal-900 mb-3">
             内容创作
           </h1>
-          <p className="text-sm text-secondary max-w-lg mx-auto">
+          <p className="text-sm text-crystal-600 max-w-lg mx-auto">
             输入原始文案并上传配图，AI 自动为各平台生成风格适配的发布内容
-          </p>
-          {/* Model hint */}
-          <p className="text-xs text-muted mt-2">
-            🤖 双模型驱动：DeepSeek + 百炼千问，自动按任务复杂度选择最优模型
           </p>
         </motion.div>
 
@@ -187,14 +178,25 @@ export default function GeneratePage() {
           {/* Left: Input Area */}
           <div className="lg:col-span-1 space-y-5">
             {/* Platform selector */}
-            <Card>
-              <h3 className="text-sm font-heading font-semibold text-primary mb-3">
-                📱 选择发布平台
+            <Card className="card-premium">
+              <h3 className="text-sm font-heading font-semibold text-crystal-900 mb-3">
+                选择发布平台
               </h3>
               <div className="flex flex-wrap gap-2">
                 {PLATFORM_ORDER.map((pid) => {
                   const p = PLATFORMS[pid];
+                  const isLive = p.apiStatus === 'live';
                   const isSelected = selectedPlatforms.includes(pid);
+                  if (!isLive) {
+                    return (
+                      <span key={pid}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium bg-crystal-50 text-crystal-400 border border-crystal-200 cursor-not-allowed opacity-60">
+                        <span className="w-1.5 h-1.5 rounded-full bg-crystal-400" />
+                        {p.name}
+                        <span className="text-[10px] ml-0.5">即将上线</span>
+                      </span>
+                    );
+                  }
                   return (
                     <motion.button
                       key={pid}
@@ -203,7 +205,7 @@ export default function GeneratePage() {
                       className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all duration-200 ${
                         isSelected
                           ? 'text-white shadow-sm'
-                          : 'bg-gray-50 text-muted hover:bg-gray-100 border border-border'
+                          : 'bg-crystal-50 text-crystal-500 hover:bg-crystal-100 border border-crystal-200'
                       }`}
                       style={isSelected ? { backgroundColor: p.color } : {}}
                     >
@@ -216,12 +218,12 @@ export default function GeneratePage() {
             </Card>
 
             {/* Text input */}
-            <Card>
+            <Card className="card-premium">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-heading font-semibold text-primary">✏️ 文案内容</h3>
+                <h3 className="text-sm font-heading font-semibold text-crystal-900">文案内容</h3>
                 <motion.span
                   className={`text-xs font-mono ${
-                    charCount > 0 ? 'text-emerald-500' : 'text-muted'
+                    charCount > 0 ? 'text-gilt-500' : 'text-crystal-500'
                   }`}
                   animate={{ scale: charCount > 0 ? [1, 1.1, 1] : 1 }}
                   transition={{ duration: 0.3 }}
@@ -235,20 +237,20 @@ export default function GeneratePage() {
                 onChange={(e) => setInputText(e.target.value)}
                 placeholder="输入你想发布的内容...&#10;&#10;AI 会自动为每个平台生成适配的：&#10;• 吸引人的标题&#10;• 风格适配的正文&#10;• 热门话题标签&#10;• 配图位置建议"
                 rows={10}
-                className="w-full px-4 py-3 rounded-xl border border-border bg-white text-sm text-primary placeholder:text-muted resize-none focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 rounded-xl border border-crystal-200 bg-white text-sm text-crystal-900 placeholder:text-crystal-500 resize-none focus:outline-none focus:ring-2 focus:ring-gilt-400 focus:border-transparent transition-all"
               />
             </Card>
 
             {/* Multi-image upload */}
-            <Card>
+            <Card className="card-premium">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-heading font-semibold text-primary">
-                  🖼️ 配图 <span className="text-muted font-normal text-xs">({inputImages.length}/{MAX_IMAGES})</span>
+                <h3 className="text-sm font-heading font-semibold text-crystal-900">
+                  配图 <span className="text-crystal-500 font-normal text-xs">({inputImages.length}/{MAX_IMAGES})</span>
                 </h3>
                 {inputImages.length > 0 && (
                   <button
                     onClick={clearImages}
-                    className="text-xs text-muted hover:text-red-500 transition-colors"
+                    className="text-xs text-crystal-500 hover:text-red-500 transition-colors"
                   >
                     清空全部
                   </button>
@@ -274,7 +276,7 @@ export default function GeneratePage() {
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.8 }}
-                        className="relative aspect-square rounded-lg overflow-hidden border border-border group"
+                        className="relative aspect-square rounded-lg overflow-hidden border border-crystal-200 group"
                       >
                         <img
                           src={img}
@@ -305,7 +307,7 @@ export default function GeneratePage() {
                 {inputImages.length < MAX_IMAGES && (
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex-1 py-4 rounded-xl border-2 border-dashed border-border hover:border-emerald-400 transition-all flex flex-col items-center gap-1 text-muted hover:text-emerald-500 group"
+                    className="flex-1 py-4 rounded-xl border-2 border-dashed border-crystal-200 hover:border-gilt-400 transition-all flex flex-col items-center gap-1 text-crystal-500 hover:text-gilt-500 group"
                   >
                     <motion.div
                       animate={{ y: [0, -2, 0] }}
@@ -319,14 +321,14 @@ export default function GeneratePage() {
                 {inputImages.length < MAX_IMAGES && (
                   <button
                     onClick={() => setShowMaterialSelector(true)}
-                    className="flex-1 py-4 rounded-xl border-2 border-dashed border-border hover:border-emerald-400 transition-all flex flex-col items-center gap-1 text-muted hover:text-emerald-500 group"
+                    className="flex-1 py-4 rounded-xl border-2 border-dashed border-crystal-200 hover:border-gilt-400 transition-all flex flex-col items-center gap-1 text-crystal-500 hover:text-gilt-500 group"
                   >
                     <FolderOpen className="w-6 h-6" />
                     <span className="text-xs">素材库选择</span>
                   </button>
                 )}
               </div>
-              <p className="text-center text-[11px] text-muted">
+              <p className="text-center text-[11px] text-crystal-500">
                 支持 JPG/PNG/GIF/WebP，最大 5MB/张
               </p>
             </Card>
@@ -339,7 +341,7 @@ export default function GeneratePage() {
               className="w-full"
               icon={!isGenerating ? <Sparkles className="w-4 h-4" /> : undefined}
             >
-              {isGenerating ? 'AI 正在生成...' : '✨ AI 智能生成'}
+              {isGenerating ? 'AI 正在生成...' : 'AI 智能生成'}
             </Button>
 
             {error && (
@@ -351,15 +353,6 @@ export default function GeneratePage() {
                 {error}
               </motion.p>
             )}
-
-            {(inputText || results.length > 0 || inputImages.length > 0) && (
-              <button
-                onClick={handleReset}
-                className="w-full text-sm text-muted hover:text-secondary transition-colors py-2"
-              >
-                重置全部
-              </button>
-            )}
           </div>
 
           {/* Right: Results */}
@@ -367,18 +360,15 @@ export default function GeneratePage() {
             {results.length === 0 && !isGenerating ? (
               <EmptyState
                 title="AI 生成结果将显示在这里"
-                description="输入你的原始文案，选择目标平台，上传配图，点击「AI 智能生成」试试吧"
+                description="输入文案、选择平台，点击生成即可获得各平台适配内容"
                 action={
                   <div className="flex flex-wrap gap-2 justify-center mt-2">
-                    {PLATFORM_ORDER.map((pid) => {
+                    {PLATFORM_ORDER.filter(pid => PLATFORMS[pid].apiStatus === 'live').map((pid) => {
                       const p = PLATFORMS[pid];
                       return (
-                        <span
-                          key={pid}
-                          className="px-2 py-1 rounded-lg text-xs font-medium"
-                          style={{ backgroundColor: p.color + '15', color: p.color }}
-                        >
-                          {p.name}: {p.contentStyle}
+                        <span key={pid} className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                          style={{ backgroundColor: p.color + '12', color: p.color, border: `1px solid ${p.color}20` }}>
+                          {p.name}
                         </span>
                       );
                     })}
@@ -390,10 +380,10 @@ export default function GeneratePage() {
                 <motion.div
                   animate={{ rotate: 360 }}
                   transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-                  className="w-16 h-16 rounded-full border-2 border-emerald-200 border-t-emerald-500 mb-6"
+                  className="w-16 h-16 rounded-full border-2 border-gilt-300 border-t-gilt-500 mb-6"
                 />
-                <p className="text-sm text-secondary">AI 正在为各平台生成适配内容...</p>
-                <p className="text-xs text-muted mt-2">
+                <p className="text-sm text-crystal-600">AI 正在为各平台生成适配内容...</p>
+                <p className="text-xs text-crystal-500 mt-2">
                   {inputImages.length > 0 ? `包含 ${inputImages.length} 张配图分析，请稍候` : '这可能需要几秒钟'}
                 </p>
               </div>
@@ -410,11 +400,8 @@ export default function GeneratePage() {
                       animate="visible"
                     >
                       {/* Platform header */}
-                      <div className="flex items-center gap-3 mb-4">
+                      <div className="flex items-center gap-2 mb-4">
                         <Badge platform={pid} size="md" />
-                        <span className="text-xs text-muted">
-                          {platform.contentStyle}
-                        </span>
                       </div>
 
                       {platformResults.map((result, idx) => {
@@ -422,11 +409,11 @@ export default function GeneratePage() {
                         const hasMultiImg = result.images && result.images.length > 1;
                         return (
                           <motion.div key={`${pid}-${idx}`} variants={staggerItem}>
-                            <Card className="overflow-hidden">
+                            <Card className="card-premium overflow-hidden">
                               {/* Card header */}
                               <div className="flex items-start justify-between mb-4">
                                 <div className="flex-1">
-                                  <h4 className="font-heading font-semibold text-primary mb-1">
+                                  <h4 className="font-heading font-semibold text-crystal-900 mb-1">
                                     {result.title}
                                   </h4>
                                 </div>
@@ -435,16 +422,16 @@ export default function GeneratePage() {
 
                               {/* Content with markdown-style renders */}
                               <div className="prose prose-sm max-w-none mb-4">
-                                <p className="text-sm text-secondary leading-relaxed whitespace-pre-wrap">
+                                <p className="text-sm text-crystal-600 leading-relaxed whitespace-pre-wrap">
                                   {result.content}
                                 </p>
                               </div>
 
                               {/* Image indicators */}
                               {result.images && result.images.length > 0 && (
-                                <div className="mb-4 flex items-center gap-2 p-3 rounded-xl bg-gray-50">
-                                  <Layers className="w-4 h-4 text-muted" />
-                                  <span className="text-xs text-secondary">
+                                <div className="mb-4 flex items-center gap-2 p-3 rounded-xl bg-crystal-50">
+                                  <Layers className="w-4 h-4 text-crystal-500" />
+                                  <span className="text-xs text-crystal-600">
                                     含 {result.images.length} 张配图（封面 + {hasMultiImg ? `${result.images.length - 1} 张正文插图` : '正文'}）
                                   </span>
                                 </div>
@@ -452,20 +439,20 @@ export default function GeneratePage() {
 
                               {/* Hashtags */}
                               {result.hashtags && (
-                                <div className="mb-4 p-3 rounded-xl bg-gray-50">
-                                  <p className="text-sm text-accent-dark font-medium">
+                                <div className="mb-4 p-3 rounded-xl bg-gilt-50 border border-gilt-200/40">
+                                  <p className="text-sm text-gilt-700 font-medium">
                                     {result.hashtags}
                                   </p>
                                 </div>
                               )}
 
                               {/* Actions */}
-                              <div className="flex items-center gap-2 pt-3 border-t border-border">
+                              <div className="flex items-center gap-2 pt-3 border-t border-crystal-200">
                                 <Button
                                   size="sm"
                                   variant="secondary"
                                   icon={copiedIdx === globalIdx ? (
-                                    <Check className="w-3.5 h-3.5 text-emerald-500" />
+                                    <Check className="w-3.5 h-3.5 text-gilt-500" />
                                   ) : (
                                     <Copy className="w-3.5 h-3.5" />
                                   )}
