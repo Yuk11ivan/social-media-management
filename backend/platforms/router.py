@@ -265,3 +265,84 @@ async def unbind_xiaohongshu(current_user: dict = Depends(get_current_user)):
     if not removed:
         return {"success": False, "message": "当前未绑定小红书"}
     return {"success": True, "message": "已解绑小红书"}
+
+
+# ========== 抖音 平台绑定 ==========
+
+from .models import DouyinBindRequest, DouyinStatusResponse
+from .service import (
+    bind_douyin_account,
+    get_douyin_status_data,
+    open_douyin_login,
+)
+from publishers.douyin_publisher import check_runtime as dy_check_runtime
+
+
+@router.post("/douyin/bind", response_model=DouyinStatusResponse)
+async def bind_douyin(
+    request: DouyinBindRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """绑定抖音（创建 Chrome Profile 用于浏览器自动化登录）"""
+    account = bind_douyin_account(
+        user_id=current_user["id"],
+        account_name=request.account_name,
+        profile_dir=request.profile_dir,
+    )
+    data = get_douyin_status_data(current_user["id"])
+    data["message"] = "抖音绑定成功，请打开浏览器完成扫码登录"
+    return DouyinStatusResponse(**data)
+
+
+@router.get("/douyin/status", response_model=DouyinStatusResponse)
+async def douyin_status(current_user: dict = Depends(get_current_user)):
+    """查看当前用户的抖音绑定状态"""
+    return DouyinStatusResponse(**get_douyin_status_data(current_user["id"]))
+
+
+@router.post("/douyin/test")
+async def test_douyin(current_user: dict = Depends(get_current_user)):
+    """测试抖音运行环境与登录态"""
+    data = get_douyin_status_data(current_user["id"])
+    if not data["bound"]:
+        return {"success": False, "message": "尚未绑定抖音"}
+
+    issues = []
+    if not data["chrome_ready"]:
+        issues.append("未找到 Chrome 浏览器")
+    if not data["bun_ready"]:
+        issues.append("未找到 bun/npx 运行时")
+    if not data["deps_ready"]:
+        issues.append("抖音发布脚本 douyin-post.ts 不存在，请联系管理员")
+    if not data["connected"]:
+        issues.append("Chrome Profile 中未检测到抖音登录态，请先打开浏览器扫码登录")
+
+    if issues:
+        return {"success": False, "message": "；".join(issues)}
+    return {"success": True, "message": "抖音运行环境正常，登录态有效"}
+
+
+@router.post("/douyin/open-login")
+async def douyin_open_login(current_user: dict = Depends(get_current_user)):
+    """打开 Chrome 供用户扫码登录抖音（首次绑定或 session 过期时）"""
+    account = storage_service.get_platform_account(current_user["id"], "douyin")
+    if not account:
+        return {"success": False, "message": "请先绑定抖音"}
+
+    try:
+        open_douyin_login(current_user["id"])
+        return {
+            "success": True,
+            "message": "已打开 Chrome，请在浏览器中扫码登录抖音后关闭窗口",
+        }
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+
+
+@router.delete("/douyin/unbind")
+async def unbind_douyin(current_user: dict = Depends(get_current_user)):
+    """解绑抖音"""
+    removed = storage_service.delete_platform_account(current_user["id"], "douyin")
+    if not removed:
+        return {"success": False, "message": "当前未绑定抖音"}
+    return {"success": True, "message": "已解绑抖音"}

@@ -186,3 +186,85 @@ def open_xiaohongshu_login(user_id: str) -> None:
     """打开 Chrome 浏览器供用户登录小红书"""
     profile_dir = get_user_xiaohongshu_profile_dir(user_id)
     xhs_open_login_browser(profile_dir)
+
+
+# ========== 抖音绑定服务 ==========
+
+from config import DOUYIN_PROFILES_DIR
+from publishers.douyin_publisher import (
+    check_runtime as dy_check_runtime,
+    get_default_profile_dir as dy_get_default_profile_dir,
+    open_login_browser as dy_open_login_browser,
+    profile_has_session as dy_profile_has_session,
+    resolve_profile_dir as dy_resolve_profile_dir,
+)
+
+
+def get_user_douyin_profile_dir(user_id: str) -> Path:
+    """获取用户的抖音 Chrome Profile 目录"""
+    account = storage_service.get_platform_account(user_id, "douyin")
+    if not account:
+        raise HTTPException(status_code=400, detail="请先绑定抖音账号")
+    stored = decrypt_secret(account["app_secret_enc"])
+    return dy_resolve_profile_dir(user_id, stored)
+
+
+def bind_douyin_account(user_id: str, account_name: str = None, profile_dir: str = None) -> dict:
+    """绑定抖音账号（创建 Chrome Profile 目录）"""
+    if profile_dir:
+        profile_path = Path(profile_dir)
+        if not profile_path.is_absolute():
+            profile_path = Path(__file__).resolve().parent.parent / profile_dir
+    else:
+        profile_path = dy_get_default_profile_dir(user_id)
+    profile_path = profile_path.resolve()
+    profile_path.mkdir(parents=True, exist_ok=True)
+    DOUYIN_PROFILES_DIR.mkdir(parents=True, exist_ok=True)
+
+    return storage_service.upsert_platform_account(
+        user_id=user_id,
+        platform="douyin",
+        app_id="douyin",
+        app_secret_enc=encrypt_secret(str(profile_path)),
+        account_name=account_name,
+    )
+
+
+def get_douyin_status_data(user_id: str) -> dict:
+    """获取抖音绑定状态与运行环境信息"""
+    account = storage_service.get_platform_account(user_id, "douyin")
+    runtime = dy_check_runtime()
+
+    if not account:
+        return {
+            "bound": False, "connected": False,
+            "chrome_ready": runtime["chrome_ready"],
+            "bun_ready": runtime["bun_ready"],
+            "deps_ready": runtime["deps_ready"],
+            "message": "尚未绑定抖音",
+        }
+
+    profile_dir = dy_resolve_profile_dir(user_id, decrypt_secret(account["app_secret_enc"]))
+    connected = dy_profile_has_session(profile_dir)
+    masked = str(profile_dir)
+    if len(masked) > 20:
+        masked = masked[:8] + "****" + masked[-8:]
+
+    message = "抖音已绑定，登录态正常" if connected else "抖音已绑定，请打开浏览器完成首次登录"
+    return {
+        "bound": True,
+        "account_name": account.get("account_name"),
+        "profile_dir": masked,
+        "connected": connected,
+        "chrome_ready": runtime["chrome_ready"],
+        "bun_ready": runtime["bun_ready"],
+        "deps_ready": runtime["deps_ready"],
+        "message": message,
+        "bound_at": account.get("created_at"),
+    }
+
+
+def open_douyin_login(user_id: str) -> None:
+    """打开 Chrome 浏览器供用户登录抖音"""
+    profile_dir = get_user_douyin_profile_dir(user_id)
+    dy_open_login_browser(profile_dir)

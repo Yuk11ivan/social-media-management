@@ -33,6 +33,7 @@ from platforms.router import router as platforms_router
 from platforms.service import get_user_wechat_api, get_user_weibo_profile_dir
 from publishers.weibo_publisher import WeiboPublisherError, publish_weibo
 from publishers.xiaohongshu_publisher import XiaohongshuPublisherError, publish_xiaohongshu
+from publishers.douyin_publisher import DouyinPublisherError, publish_douyin
 from image_service import extract_visual_keywords, generate_image
 
 # ===== 文件存储配置 =====
@@ -593,7 +594,65 @@ async def push_to_platform(
             )
             raise HTTPException(status_code=500, detail=f"推送失败: {str(e)}")
 
-    # 其他平台 Mock（如抖音等暂未对接的平台）
+    if platform == "douyin":
+        try:
+            dy_images = content.images if content.images else (
+                [content.image] if content.image else None
+            )
+            img_count = len(dy_images) if dy_images else 0
+            img_preview = ""
+            if dy_images and len(dy_images) > 0:
+                img_preview = dy_images[0][:80] + "..." if len(dy_images[0]) > 80 else dy_images[0]
+            print(f"[DY Push] title={content.title!r}, images={img_count}, preview={img_preview!r}")
+
+            result = publish_douyin(
+                user_id=user_id,
+                content=content.content,
+                title=content.title,
+                images=dy_images,
+                topics=content.hashtags,
+            )
+
+            storage_service.log_push(
+                adapted_content_id=adapted_content_id,
+                platform=platform,
+                platform_name=platform_name,
+                status="success",
+                content_id=result.get("content_id", ""),
+                message=result.get("message", "抖音图文已填入编辑器"),
+                user_id=user_id,
+            )
+            return {
+                "success": True,
+                "message": result.get("message", f"已成功推送至{platform_name}"),
+                "platform": platform,
+                "content_id": result.get("content_id"),
+            }
+
+        except DouyinPublisherError as e:
+            storage_service.log_push(
+                adapted_content_id=adapted_content_id,
+                platform=platform,
+                platform_name=platform_name,
+                status="failed",
+                message=str(e),
+                user_id=user_id,
+            )
+            raise HTTPException(status_code=500, detail=f"抖音推送失败: {e}")
+        except HTTPException:
+            raise
+        except Exception as e:
+            storage_service.log_push(
+                adapted_content_id=adapted_content_id,
+                platform=platform,
+                platform_name=platform_name,
+                status="failed",
+                message=str(e),
+                user_id=user_id,
+            )
+            raise HTTPException(status_code=500, detail=f"推送失败: {str(e)}")
+
+    # 其他平台 Mock
     try:
         content_id = f"mock_{datetime.now().timestamp()}"
         storage_service.log_push(

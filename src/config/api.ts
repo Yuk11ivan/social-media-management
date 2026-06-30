@@ -238,6 +238,34 @@ export const platformApi = {
       method: 'DELETE',
     }),
 
+  // 抖音
+  getDouyinStatus: () =>
+    apiFetch<{
+      bound: boolean; connected: boolean; account_name?: string;
+      profile_dir?: string; chrome_ready?: boolean; bun_ready?: boolean;
+      deps_ready?: boolean; message?: string;
+    }>('/api/platforms/douyin/status'),
+
+  bindDouyin: (data: { account_name?: string; profile_dir?: string }) =>
+    apiFetch<{ message: string }>('/api/platforms/douyin/bind', {
+      method: 'POST', body: JSON.stringify(data),
+    }),
+
+  testDouyin: () =>
+    apiFetch<{ success: boolean; message: string }>('/api/platforms/douyin/test', {
+      method: 'POST',
+    }),
+
+  openDouyinLogin: () =>
+    apiFetch<{ success: boolean; message: string }>('/api/platforms/douyin/open-login', {
+      method: 'POST',
+    }),
+
+  unbindDouyin: () =>
+    apiFetch<{ message: string }>('/api/platforms/douyin/unbind', {
+      method: 'DELETE',
+    }),
+
   push: (platformId: string, adaptedContentId?: number, content?: unknown) =>
     apiFetch<{ message: string; content_id?: string }>(
       `/api/platform/push?platform=${platformId}`,

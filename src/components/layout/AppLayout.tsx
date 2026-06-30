@@ -40,7 +40,7 @@ export default function AppLayout({ children }: Props) {
       ) : (
         <div className="flex h-screen overflow-hidden">
           <Sidebar />
-          <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarCollapsed ? 'pl-[72px]' : 'pl-[240px]'}`}>
+          <div className="flex-1 flex flex-col" style={{ paddingLeft: sidebarCollapsed ? 72 : 240 }}>
             <HeaderBar />
             <main className="flex-1 overflow-y-auto mt-14" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(0,0,0,0.08) transparent' }}>
               {children}

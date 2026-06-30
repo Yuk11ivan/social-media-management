@@ -21,6 +21,11 @@ interface PlatformState {
   testXiaohongshu: () => Promise<{ success: boolean; message: string }>;
   openXiaohongshuLogin: () => Promise<{ success: boolean; message: string }>;
   unbindXiaohongshu: () => Promise<void>;
+  fetchDouyinStatus: () => Promise<void>;
+  bindDouyin: (accountName?: string, profileDir?: string) => Promise<void>;
+  testDouyin: () => Promise<{ success: boolean; message: string }>;
+  openDouyinLogin: () => Promise<{ success: boolean; message: string }>;
+  unbindDouyin: () => Promise<void>;
   fetchAllStatuses: () => Promise<void>;
   setIsLoading: (v: boolean) => void;
 }
@@ -37,7 +42,7 @@ export const usePlatformStore = create<PlatformState>()((set, get) => ({
   statuses: {
     wechat: defaultStatus('wechat'),
     xiaohongshu: defaultStatus('xiaohongshu'),
-    douyin: { ...defaultStatus('douyin'), accountName: '即将上线' },
+    douyin: defaultStatus('douyin'),
     weibo: defaultStatus('weibo'),
   },
   isLoading: false,
@@ -220,11 +225,57 @@ export const usePlatformStore = create<PlatformState>()((set, get) => ({
     }
   },
 
+  fetchDouyinStatus: async () => {
+    set({ isLoading: true });
+    try {
+      const data = await platformApi.getDouyinStatus();
+      set((s) => ({
+        statuses: {
+          ...s.statuses,
+          douyin: {
+            platformId: 'douyin',
+            bound: data.bound,
+            connected: data.connected,
+            accountName: data.account_name,
+            appId: data.profile_dir,
+          },
+        },
+      }));
+    } catch { /* keep default */ } finally { set({ isLoading: false }); }
+  },
+
+  bindDouyin: async (accountName, profileDir) => {
+    set({ isBinding: true });
+    try {
+      await platformApi.bindDouyin({ account_name: accountName, profile_dir: profileDir });
+      await get().fetchDouyinStatus();
+    } finally { set({ isBinding: false }); }
+  },
+
+  testDouyin: async () => {
+    set({ isTesting: true });
+    try { return await platformApi.testDouyin(); }
+    finally { set({ isTesting: false }); }
+  },
+
+  openDouyinLogin: async () => {
+    return await platformApi.openDouyinLogin();
+  },
+
+  unbindDouyin: async () => {
+    set({ isLoading: true });
+    try {
+      await platformApi.unbindDouyin();
+      set((s) => ({ statuses: { ...s.statuses, douyin: defaultStatus('douyin') } }));
+    } finally { set({ isLoading: false }); }
+  },
+
   fetchAllStatuses: async () => {
     await Promise.all([
       get().fetchWechatStatus(),
       get().fetchWeiboStatus(),
       get().fetchXiaohongshuStatus(),
+      get().fetchDouyinStatus(),
     ]);
   },
 

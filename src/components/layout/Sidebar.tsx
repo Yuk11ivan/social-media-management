@@ -26,6 +26,8 @@ export default function Sidebar() {
       transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
       className="fixed left-0 top-0 bottom-0 z-40 flex flex-col"
       style={{
+        width: sidebarCollapsed ? 72 : 240,
+        minWidth: sidebarCollapsed ? 72 : 240,
         background: 'linear-gradient(180deg, rgba(245,243,240,0.98) 0%, rgba(240,237,233,0.96) 100%)',
         backdropFilter: 'blur(24px)',
         borderRight: '1px solid rgba(200,181,144,0.2)',

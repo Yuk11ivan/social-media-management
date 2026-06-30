@@ -75,3 +75,9 @@ XHS_PROFILES_DIR = Path(os.getenv("XHS_PROFILES_DIR", str(_project_root / "backe
 XHS_CHROME_PATH = os.getenv("XHS_BROWSER_CHROME_PATH", os.getenv("XHS_CHROME_PATH", ""))
 XHS_BUN_COMMAND = os.getenv("XHS_BUN_COMMAND", "")
 XHS_CHROME_DEBUG_PORT = int(os.getenv("XHS_CHROME_DEBUG_PORT", "9223"))
+
+# ========== 抖音推送配置 ==========
+DOUYIN_PROFILES_DIR = Path(os.getenv("DOUYIN_PROFILES_DIR", str(_project_root / "backend" / "douyin_profiles")))
+DOUYIN_CHROME_PATH = os.getenv("DOUYIN_BROWSER_CHROME_PATH", os.getenv("DOUYIN_CHROME_PATH", ""))
+DOUYIN_BUN_COMMAND = os.getenv("DOUYIN_BUN_COMMAND", "")
+DOUYIN_CHROME_DEBUG_PORT = int(os.getenv("DOUYIN_CHROME_DEBUG_PORT", "9224"))

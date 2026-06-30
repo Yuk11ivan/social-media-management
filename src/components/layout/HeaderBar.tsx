@@ -4,8 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Bell, User, Settings, LogOut, Home, ChevronRight } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../stores/uiStore';
-import { cn } from '../../lib/utils';
-
 const PATH_LABELS: Record<string, string> = {
   generate: '内容生成', material: '素材管理', push: '推送发布', history: '历史记录',
   platforms: '平台管理', account: '账户设置', wechat: '微信公众号', weibo: '微博', xiaohongshu: '小红书',
@@ -28,8 +26,8 @@ export default function HeaderBar() {
   }, [location.pathname]);
 
   return (
-    <header className={cn('fixed top-0 right-0 z-30', sidebarCollapsed ? 'left-[72px]' : 'left-[240px]')}
-      style={{ height: 56, background: 'rgba(252,250,247,0.9)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(200,181,144,0.2)' }}>
+    <header className="fixed top-0 right-0 z-30"
+      style={{ left: sidebarCollapsed ? 72 : 240, height: 56, background: 'rgba(252,250,247,0.9)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(200,181,144,0.2)' }}>
       <div className="h-full flex items-center justify-between px-6">
         <nav className="flex items-center gap-1.5 text-sm">
           {breadcrumbs.map((c, i) => (

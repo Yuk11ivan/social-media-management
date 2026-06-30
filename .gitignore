@@ -16,3 +16,6 @@ backend/uploads/
 backend/weibo_profiles/
 backend/xiaohongshu_profiles/
 .agents/
+backend/douyin_profiles/
+backend/weibo_profiles/
+backend/xiaohongshu_profiles/

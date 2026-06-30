@@ -17,24 +17,27 @@ export default function PlatformsPage() {
     location.pathname.endsWith('/wechat') ? 'wechat'
     : location.pathname.endsWith('/weibo') ? 'weibo'
     : location.pathname.endsWith('/xiaohongshu') ? 'xiaohongshu'
+    : location.pathname.endsWith('/douyin') ? 'douyin'
     : null;
 
   const wechatRef = useRef<HTMLDivElement>(null);
   const weiboRef = useRef<HTMLDivElement>(null);
   const xhsRef = useRef<HTMLDivElement>(null);
+  const dyRef = useRef<HTMLDivElement>(null);
 
   const {
     statuses, fetchAllStatuses,
     bindWechat, testWechat, unbindWechat,
     bindWeibo, testWeibo, openWeiboLogin, unbindWeibo,
     bindXiaohongshu, testXiaohongshu, openXiaohongshuLogin, unbindXiaohongshu,
+    bindDouyin, testDouyin, openDouyinLogin, unbindDouyin,
     isBinding, isTesting,
   } = usePlatformStore();
   const { token } = useAuthStore();
   const { toast } = useToast();
 
   // ---- modal state ----
-  const [modal, setModal] = useState<'wechat' | 'weibo' | 'xiaohongshu' | null>(null);
+  const [modal, setModal] = useState<'wechat' | 'weibo' | 'xiaohongshu' | 'douyin' | null>(null);
   const [appId, setAppId] = useState('');
   const [appSecret, setAppSecret] = useState('');
   const [showSecret, setShowSecret] = useState(false);
@@ -50,14 +53,16 @@ export default function PlatformsPage() {
     if (!focusPlatform) return;
     const t = window.setTimeout(() => {
       const el = focusPlatform === 'wechat' ? wechatRef.current
-        : focusPlatform === 'weibo' ? weiboRef.current : xhsRef.current;
+        : focusPlatform === 'weibo' ? weiboRef.current
+        : focusPlatform === 'xiaohongshu' ? xhsRef.current
+        : dyRef.current;
       el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 300);
     return () => clearTimeout(t);
   }, [focusPlatform, statuses.wechat?.bound, statuses.weibo?.bound, statuses.xiaohongshu?.bound]);
 
   // ---- handlers ----
-  const openModal = (p: 'wechat' | 'weibo' | 'xiaohongshu') => {
+  const openModal = (p: 'wechat' | 'weibo' | 'xiaohongshu' | 'douyin') => {
     setAccountName('');
     setProfileDir('');
     setShowAdvanced(false);
@@ -74,61 +79,60 @@ export default function PlatformsPage() {
     } catch (err: any) { toast(err.message || '绑定失败', 'error'); }
   };
 
-  const handleWeiboBind = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await bindWeibo(accountName || undefined, profileDir || undefined);
-      toast('微博绑定成功！请打开浏览器完成登录', 'success');
-      setModal(null);
-    } catch (err: any) { toast(err.message || '绑定失败', 'error'); }
+  const getBrowserHandlers = (p: string) => {
+    if (p === 'weibo') return { test: testWeibo, open: openWeiboLogin, unbind: unbindWeibo };
+    if (p === 'xiaohongshu') return { test: testXiaohongshu, open: openXiaohongshuLogin, unbind: unbindXiaohongshu };
+    return { test: testDouyin, open: openDouyinLogin, unbind: unbindDouyin };
   };
 
-  const handleXhsBind = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await bindXiaohongshu(accountName || undefined, profileDir || undefined);
-      toast('小红书绑定成功！请打开浏览器完成登录', 'success');
-      setModal(null);
-    } catch (err: any) { toast(err.message || '绑定失败', 'error'); }
-  };
-
-  const handleTest = async (p: 'wechat' | 'weibo' | 'xiaohongshu') => {
+  const handleTest = async (p: 'wechat' | 'weibo' | 'xiaohongshu' | 'douyin') => {
     try {
       if (p === 'wechat') {
         await testWechat();
         toast('微信连接测试通过！', 'success');
       } else {
-        const fn = p === 'weibo' ? testWeibo : testXiaohongshu;
-        const result = await fn();
+        const { test } = getBrowserHandlers(p);
+        const result = await test();
         toast(result.message, result.success ? 'success' : 'error');
       }
     } catch (err: any) { toast(err.message || '测试失败', 'error'); }
   };
 
-  const handleOpenLogin = async (p: 'weibo' | 'xiaohongshu') => {
+  const handleOpenLogin = async (p: 'weibo' | 'xiaohongshu' | 'douyin') => {
     try {
-      const fn = p === 'weibo' ? openWeiboLogin : openXiaohongshuLogin;
-      const result = await fn();
+      const { open } = getBrowserHandlers(p);
+      const result = await open();
       toast(result.message, result.success ? 'success' : 'error');
       if (result.success) setTimeout(() => fetchAllStatuses(), 3000);
     } catch (err: any) { toast(err.message || '打开浏览器失败', 'error'); }
   };
 
-  const handleUnbind = async (p: 'wechat' | 'weibo' | 'xiaohongshu') => {
+  const handleUnbind = async (p: 'wechat' | 'weibo' | 'xiaohongshu' | 'douyin') => {
     try {
-      const fn = p === 'wechat' ? unbindWechat : p === 'weibo' ? unbindWeibo : unbindXiaohongshu;
-      await fn();
+      if (p === 'wechat') { await unbindWechat(); }
+      else { const { unbind } = getBrowserHandlers(p); await unbind(); }
       toast(`已解绑${PLATFORMS[p].name}`, 'info');
     } catch (err: any) { toast(err.message || '解绑失败', 'error'); }
+  };
+
+  const handleBrowserBind = async (p: 'weibo' | 'xiaohongshu' | 'douyin', e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (p === 'weibo') await bindWeibo(accountName || undefined, profileDir || undefined);
+      else if (p === 'xiaohongshu') await bindXiaohongshu(accountName || undefined, profileDir || undefined);
+      else await bindDouyin(accountName || undefined, profileDir || undefined);
+      toast(`${PLATFORMS[p].name}绑定成功！请打开浏览器完成登录`, 'success');
+      setModal(null);
+    } catch (err: any) { toast(err.message || '绑定失败', 'error'); }
   };
 
   // ---- render helpers ----
   const status = (pid: PlatformId) => statuses[pid];
 
-  const renderBindSection = (pid: 'wechat' | 'weibo' | 'xiaohongshu') => {
+  const renderBindSection = (pid: 'wechat' | 'weibo' | 'xiaohongshu' | 'douyin') => {
     const st = status(pid);
     const p = PLATFORMS[pid];
-    const isBrowser = pid === 'weibo' || pid === 'xiaohongshu';
+    const isBrowser = pid === 'weibo' || pid === 'xiaohongshu' || pid === 'douyin';
 
     if (st?.bound) {
       return (
@@ -196,12 +200,12 @@ export default function PlatformsPage() {
             const p = PLATFORMS[pid];
             const isLive = p.apiStatus === 'live';
             const isMock = p.apiStatus === 'mock';
-            const isBindable = pid === 'wechat' || pid === 'weibo' || pid === 'xiaohongshu';
+            const isBindable = pid === 'wechat' || pid === 'weibo' || pid === 'xiaohongshu' || pid === 'douyin';
 
             return (
               <motion.div
                 key={pid}
-                ref={pid === 'wechat' ? wechatRef : pid === 'weibo' ? weiboRef : pid === 'xiaohongshu' ? xhsRef : undefined}
+                ref={pid === 'wechat' ? wechatRef : pid === 'weibo' ? weiboRef : pid === 'xiaohongshu' ? xhsRef : pid === 'douyin' ? dyRef : undefined}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
@@ -224,7 +228,7 @@ export default function PlatformsPage() {
                   </div>
                   <p className="text-sm text-crystal-600 mb-4">{p.description}</p>
                   <div className="border-t border-crystal-200 pt-4">
-                    {isBindable ? renderBindSection(pid as 'wechat' | 'weibo' | 'xiaohongshu')
+                    {isBindable ? renderBindSection(pid as 'wechat' | 'weibo' | 'xiaohongshu' | 'douyin')
                       : <p className="text-xs text-crystal-500">{isMock ? 'API 集成中，AI 内容生成可用，推送即将开放。' : '该平台已纳入开发计划。'}</p>}
                   </div>
                   {/* Corner gleam on hover */}
@@ -264,7 +268,7 @@ export default function PlatformsPage() {
 
         {/* ---- 微博 Modal ---- */}
         <Modal isOpen={modal === 'weibo'} onClose={() => setModal(null)} title="绑定微博">
-          <form onSubmit={handleWeiboBind} className="space-y-4">
+          <form onSubmit={(e) => handleBrowserBind('weibo', e)} className="space-y-4">
             <div className="text-xs text-crystal-600 bg-crystal-50 border border-crystal-200 rounded-lg px-3 py-2 space-y-1">
               <p><strong>绑定步骤：</strong></p>
               <p>1. 填写备注（选填）→ 点击「绑定」</p>
@@ -293,7 +297,7 @@ export default function PlatformsPage() {
 
         {/* ---- 小红书 Modal ---- */}
         <Modal isOpen={modal === 'xiaohongshu'} onClose={() => setModal(null)} title="绑定小红书">
-          <form onSubmit={handleXhsBind} className="space-y-4">
+          <form onSubmit={(e) => handleBrowserBind('xiaohongshu', e)} className="space-y-4">
             <div className="text-xs text-crystal-600 bg-crystal-50 border border-crystal-200 rounded-lg px-3 py-2 space-y-1">
               <p><strong>绑定步骤：</strong></p>
               <p>1. 填写备注（选填）→ 点击「绑定」</p>
@@ -316,6 +320,36 @@ export default function PlatformsPage() {
                 <input type="text" value={profileDir} onChange={e => setProfileDir(e.target.value)}
                   className="w-full px-4 py-2.5 rounded-xl border border-crystal-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-gilt-400 focus:border-transparent" placeholder="留空即可，系统自动创建" />
                 <p className="text-xs text-crystal-500 mt-2">系统自动在 <code className="text-xs bg-gray-200 px-1 rounded">backend/xiaohongshu_profiles/your_user_id</code> 创建</p>
+              </div>
+            )}
+            <Button type="submit" isLoading={isBinding} className="w-full">绑定</Button>
+          </form>
+        </Modal>
+
+        <Modal isOpen={modal === 'douyin'} onClose={() => setModal(null)} title="绑定抖音">
+          <form onSubmit={(e) => handleBrowserBind('douyin', e)} className="space-y-4">
+            <div className="text-xs text-crystal-600 bg-crystal-50 border border-crystal-200 rounded-lg px-3 py-2 space-y-1">
+              <p><strong>绑定步骤：</strong></p>
+              <p>1. 填写备注（选填）→ 点击「绑定」</p>
+              <p>2. 点击「打开浏览器登录」</p>
+              <p>3. 在 Chrome 窗口扫码登录抖音创作者平台</p>
+              <p>4. 一次登录长期有效</p>
+              <p className="text-amber-600 mt-1">基于浏览器自动化，请遵守平台规范，合理控制发布频率</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-crystal-600 mb-1">抖音昵称 / 备注 <span className="text-crystal-500 font-normal">（选填）</span></label>
+              <input type="text" value={accountName} onChange={e => setAccountName(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-crystal-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-gilt-400 focus:border-transparent" placeholder="例如：美食号" />
+            </div>
+            <button type="button" onClick={() => setShowAdvanced(!showAdvanced)} className="text-xs text-crystal-500 hover:text-crystal-600">
+              {showAdvanced ? '收起高级选项' : '展开高级选项（一般不需要填）'}
+            </button>
+            {showAdvanced && (
+              <div className="p-4 rounded-xl bg-crystal-50 border border-crystal-200">
+                <label className="block text-sm font-medium text-crystal-900 mb-1.5">Chrome Profile 路径</label>
+                <input type="text" value={profileDir} onChange={e => setProfileDir(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-crystal-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-gilt-400 focus:border-transparent" placeholder="留空即可，系统自动创建" />
+                <p className="text-xs text-crystal-500 mt-2">系统自动在 <code className="text-xs bg-gray-200 px-1 rounded">backend/douyin_profiles/your_user_id</code> 创建</p>
               </div>
             )}
             <Button type="submit" isLoading={isBinding} className="w-full">绑定</Button>
