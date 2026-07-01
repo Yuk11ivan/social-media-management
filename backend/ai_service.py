@@ -10,6 +10,7 @@ from config import (
     AI_MODEL_STRATEGY,
 )
 from models import PlatformContent
+from wechat_api import strip_image_placeholders
 import json
 import base64
 import io
@@ -167,7 +168,7 @@ class AIService:
     # ===================== Prompt 构建 =====================
 
     def _build_image_context(self, image_descriptions: list[dict]) -> str:
-        """根据图片分析结果构建配图上下文"""
+        """根据图片分析结果构建配图上下文（微信不使用，见 generate_all_platforms）"""
         if not image_descriptions:
             return ""
 
@@ -183,7 +184,7 @@ class AIService:
         return "\n".join(lines)
 
     def _wechat_prompt(self, image_descriptions: list[dict] = None) -> str:
-        img_count = len(image_descriptions or [])
+        _ = image_descriptions  # 微信不根据配图生成占位符，配图由推送时追加到文末
         base = """你是一个微信公众号专业内容编辑。请将以下内容改写为适合微信公众号发布的完整文章：
 
 【标题要求】
@@ -196,16 +197,7 @@ class AIService:
 3. 使用## 二级标题分隔不同主题段落
 4. 结尾：总结观点 + 引导互动
 5. 风格：专业但不枯燥
-"""
-        if img_count > 0:
-            base += f"""
-【配图要求 - 非常重要】
-用户提供了{img_count}张配图和它们的内容描述。请严格按照以下要求插入图片占位符：
-1. 每张图片必须有一个对应的 [插入图片N] 占位符（N从1开始）
-2. [插入图片N] 必须独占一行
-3. 参考图片内容描述来决定每张图的最佳插入位置
-4. 确保{img_count}个占位符全部出现在文章中
-5. 第1张图通常是封面，放在文章标题下方第一段之前
+6. 正文中禁止出现任何图片占位符或配图标记（如 [插入图片1]、[配图1] 等），配图由系统自动处理
 """
         base += '\n请返回JSON：{"title": "标题", "content": "文章内容(Markdown)", "hashtags": []}'
         return base
@@ -269,15 +261,12 @@ class AIService:
 
     @staticmethod
     def _douyin_prompt() -> str:
-        return """你是抖音文章内容专家。为抖音创作者平台撰写高质量图文章案：
-重要：系统会自动上传配图到文章中，你只需在正文中用【图】标记需要插图的位
+        return """你是抖音图文内容专家。为抖音创作者平台「发布图文」撰写文案（图片会由系统单独上传，正文不要写【图】占位符）：
 1. 标题简洁有力（15-30字），突出核心看点
-2. 正文结构清晰（300-800字），每段开头或中间用【图】标记插图位置（每段1-2个即可）
-3. 语言简洁专业，适合移动端阅读
-4. 结尾包含3-5个抖音热门话题标签
-5. 不使用emoji，保持干净专业的文字风格
-示例：开篇段落文字...【图】第二段文字内容...【图】结尾段... #话题1 #话题2
-返回JSON：{"title": "标题", "content": "正文（含【图】标记）", "hashtags": ["#标签"]}"""
+2. 正文为作品描述（200-500字），分段清晰，适合移动端阅读
+3. 语言简洁有感染力，可适当使用 emoji
+4. 结尾附带3-5个抖音热门话题标签（放在 hashtags 字段，不要全部堆在正文里）
+返回JSON：{"title": "标题", "content": "作品描述正文", "hashtags": ["#标签1", "#标签2"]}"""
 
     @staticmethod
     def _weibo_prompt() -> str:
@@ -353,16 +342,15 @@ class AIService:
                     "hashtags": [],
                 }
 
-            # 验证占位符完整性
             content = result.get("content", "")
-            for i in range(1, img_count + 1):
-                if f"[插入图片{i}]" not in content:
-                    print(f"  ⚠ [{platform}] 缺少 [插入图片{i}] 占位符，自动追加")
-                    # 在段落之间追加缺失的占位符
-                    paras = content.split("\n\n")
-                    insert_at = min(i, len(paras) - 1)
-                    paras.insert(insert_at, f"[插入图片{i}]")
-                    content = "\n\n".join(paras)
+            if platform not in ("douyin", "wechat") and img_count > 0:
+                before = content
+                content = self._inject_image_placeholders(content, img_count)
+                if content != before:
+                    print(f"  ⚠ [{platform}] 缺少图片占位符，已均匀插入 {img_count} 处")
+
+            if platform == "wechat":
+                content = strip_image_placeholders(content)
 
             return PlatformContent(
                 platform=platform,
@@ -375,6 +363,46 @@ class AIService:
         except Exception as e:
             print(f"  AI调用失败 [{platform}]: {e}")
             return self._fallback_generate(text, platform, platform_names, prompt, user_msg)
+
+    @staticmethod
+    def _inject_image_placeholders(content: str, img_count: int) -> str:
+        """将缺失的 [插入图片N] 均匀插入段落之间"""
+        import re
+        if img_count <= 0:
+            return content
+
+        missing = [
+            i for i in range(1, img_count + 1)
+            if not re.search(rf'\[插入图片\s*{i}\]', content, re.IGNORECASE)
+        ]
+        if not missing:
+            return content
+
+        paragraphs = [p for p in re.split(r'\n\n+', content) if p.strip()]
+        if not paragraphs:
+            return content + '\n\n' + '\n\n'.join(f'[插入图片{i}]' for i in missing)
+
+        n_missing = len(missing)
+        n_paras = len(paragraphs)
+        insert_after = []
+        for k in range(n_missing):
+            pos = int((k + 1) * n_paras / (n_missing + 1))
+            pos = max(0, min(n_paras - 1, pos - 1))
+            insert_after.append(pos)
+
+        result: list[str] = []
+        mi = 0
+        for pi, para in enumerate(paragraphs):
+            result.append(para)
+            while mi < n_missing and insert_after[mi] == pi:
+                result.append(f'[插入图片{missing[mi]}]')
+                mi += 1
+
+        while mi < n_missing:
+            result.append(f'[插入图片{missing[mi]}]')
+            mi += 1
+
+        return '\n\n'.join(result)
 
     def _fallback_generate(self, text: str, platform: str, platform_names: dict, prompt: str, user_msg: str) -> PlatformContent:
         """降级生成"""
@@ -399,22 +427,27 @@ class AIService:
                 except json.JSONDecodeError:
                     result = {"title": text[:30] + "...", "content": result_text, "hashtags": []}
 
+                content = result.get("content", "")
+                if platform == "wechat":
+                    content = strip_image_placeholders(content)
+
                 return PlatformContent(
                     platform=platform,
                     platform_name=platform_names.get(platform, platform),
                     title=result.get("title", ""),
-                    content=result.get("content", ""),
+                    content=content,
                     hashtags=result.get("hashtags", []),
                 )
             except Exception:
                 continue
 
         # 最终降级
+        fallback_content = strip_image_placeholders(text) if platform == "wechat" else text
         return PlatformContent(
             platform=platform,
             platform_name=platform_names.get(platform, platform),
             title=text[:30] + "..." if len(text) > 30 else text,
-            content=text,
+            content=fallback_content,
             hashtags=[],
         )
 
@@ -450,7 +483,9 @@ class AIService:
 
         results = []
         for platform in platforms:
-            content = self.adapt_for_platform(text, platform, image_descriptions)
+            # 微信正文不含配图占位符，配图在推送时统一追加到文末
+            descs = image_descriptions if platform != "wechat" else []
+            content = self.adapt_for_platform(text, platform, descs)
             if all_images:
                 content.image = all_images[0]
                 content.images = all_images

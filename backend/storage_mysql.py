@@ -1,13 +1,14 @@
 """
 MySQL 内容存储服务（支持腾讯云 MySQL）
 """
-from models import ContentItem, PlatformContent
+from models import ContentItem, PlatformContent, AdaptedContentItem
 from datetime import datetime
 import uuid
 import json
 import mysql.connector
 from typing import Optional, List
 from config import MYSQL_CONFIG
+from draft_storage import persist_images, first_url, delete_draft_files
 
 
 class MySQLStorageService:
@@ -35,34 +36,64 @@ class MySQLStorageService:
             raise
 
     def save(self, original_text: str, original_image: str = None,
+             original_images: list[str] = None,
              adapted_contents: list[PlatformContent] = None,
              user_id: str = None) -> ContentItem:
-        """保存内容"""
+        """保存内容草稿（文字 + 图片持久化到磁盘）"""
         item_id = str(uuid.uuid4())
         created_at = datetime.now()
+
+        source_images = original_images or ([original_image] if original_image else [])
+        original_urls = persist_images(item_id, source_images)
+        cover = first_url(original_urls) or original_image
+        original_images_json = json.dumps(original_urls, ensure_ascii=False)
 
         with self._get_connection() as conn:
             cursor = conn.cursor()
 
-            # 插入主内容
             cursor.execute("""
-                INSERT INTO content_items (id, user_id, original_text, original_image, created_at)
-                VALUES (%s, %s, %s, %s, %s)
-            """, (item_id, user_id, original_text, original_image, created_at))
+                INSERT INTO content_items
+                (id, user_id, original_text, original_image, original_images_json, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, (item_id, user_id, original_text, cover, original_images_json, created_at))
 
-            # 插入平台适配内容
+            saved_adapted: list[AdaptedContentItem] = []
             if adapted_contents:
                 for adapted in adapted_contents:
                     adapted_id = str(uuid.uuid4())
                     hashtags_json = json.dumps(adapted.hashtags, ensure_ascii=False)
+
+                    img_sources = list(adapted.images or [])
+                    if not img_sources and adapted.image:
+                        img_sources = [adapted.image]
+                    if not img_sources and original_urls:
+                        img_sources = original_urls
+
+                    image_urls = persist_images(item_id, img_sources, subfolder=adapted.platform)
+                    images_json = json.dumps(image_urls, ensure_ascii=False)
+                    adapted_cover = first_url(image_urls) or adapted.image
+
                     cursor.execute("""
                         INSERT INTO adapted_contents
-                        (id, item_id, platform, platform_name, title, content, hashtags, image, created_at)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        (id, item_id, platform, platform_name, title, content,
+                         hashtags, image, images_json, created_at)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     """, (
                         adapted_id, item_id, adapted.platform, adapted.platform_name,
                         adapted.title, adapted.content, hashtags_json,
-                        adapted.image, created_at
+                        adapted_cover, images_json, created_at,
+                    ))
+                    saved_adapted.append(AdaptedContentItem(
+                        id=adapted_id,
+                        item_id=item_id,
+                        platform=adapted.platform,
+                        platform_name=adapted.platform_name,
+                        title=adapted.title,
+                        content=adapted.content,
+                        hashtags=adapted.hashtags,
+                        image=adapted_cover,
+                        images=image_urls,
+                        created_at=created_at,
                     ))
 
             conn.commit()
@@ -70,10 +101,73 @@ class MySQLStorageService:
         return ContentItem(
             id=item_id,
             original_text=original_text,
-            original_image=original_image,
-            adapted_contents=adapted_contents or [],
-            created_at=created_at
+            original_image=cover,
+            original_images=original_urls,
+            adapted_contents=saved_adapted,
+            created_at=created_at,
         )
+
+    def _parse_images_json(self, raw) -> list[str]:
+        if not raw:
+            return []
+        if isinstance(raw, list):
+            return raw
+        try:
+            parsed = json.loads(raw)
+            return parsed if isinstance(parsed, list) else []
+        except (json.JSONDecodeError, TypeError):
+            return []
+
+    def _row_to_adapted(self, arow: dict) -> AdaptedContentItem:
+        hashtags = arow.get("hashtags")
+        if isinstance(hashtags, str):
+            hashtags = json.loads(hashtags) if hashtags else []
+        elif hashtags is None:
+            hashtags = []
+        images = self._parse_images_json(arow.get("images_json"))
+        image = arow.get("image") or first_url(images)
+        return AdaptedContentItem(
+            id=arow["id"],
+            item_id=arow["item_id"],
+            platform=arow["platform"],
+            platform_name=arow["platform_name"],
+            title=arow["title"],
+            content=arow["content"],
+            hashtags=hashtags,
+            image=image,
+            images=images or None,
+            created_at=arow.get("created_at"),
+        )
+
+    def _row_to_item(self, row: dict, adapted_contents: list[AdaptedContentItem]) -> ContentItem:
+        original_images = self._parse_images_json(row.get("original_images_json"))
+        if not original_images and row.get("original_image"):
+            original_images = [row["original_image"]]
+        return ContentItem(
+            id=row["id"],
+            original_text=row["original_text"],
+            original_image=row.get("original_image") or first_url(original_images),
+            original_images=original_images or None,
+            adapted_contents=adapted_contents,
+            created_at=row["created_at"],
+        )
+
+    def _fetch_adapted_map(self, cursor, item_ids: list[str]) -> dict[str, list[AdaptedContentItem]]:
+        if not item_ids:
+            return {}
+        placeholders = ", ".join(["%s"] * len(item_ids))
+        cursor.execute(f"""
+            SELECT id, item_id, platform, platform_name, title, content,
+                   hashtags, image, images_json, created_at
+            FROM adapted_contents
+            WHERE item_id IN ({placeholders})
+            ORDER BY created_at ASC
+        """, item_ids)
+        result: dict[str, list[AdaptedContentItem]] = {iid: [] for iid in item_ids}
+        for arow in cursor.fetchall():
+            item = self._row_to_adapted(arow)
+            result.setdefault(item.item_id, []).append(item)
+        return result
 
     def get(self, item_id: str, user_id: str = None) -> Optional[ContentItem]:
         """获取单个内容"""
@@ -83,12 +177,12 @@ class MySQLStorageService:
             # 获取主内容
             if user_id:
                 cursor.execute("""
-                    SELECT id, original_text, original_image, created_at
+                    SELECT id, original_text, original_image, original_images_json, created_at
                     FROM content_items WHERE id = %s AND user_id = %s
                 """, (item_id, user_id))
             else:
                 cursor.execute("""
-                    SELECT id, original_text, original_image, created_at
+                    SELECT id, original_text, original_image, original_images_json, created_at
                     FROM content_items WHERE id = %s
                 """, (item_id,))
 
@@ -96,74 +190,64 @@ class MySQLStorageService:
             if not row:
                 return None
 
-            # 获取适配内容
-            cursor.execute("""
-                SELECT platform, platform_name, title, content, hashtags, image
-                FROM adapted_contents WHERE item_id = %s
-            """, (item_id,))
+            adapted_map = self._fetch_adapted_map(cursor, [item_id])
+            return self._row_to_item(row, adapted_map.get(item_id, []))
 
-            adapted_contents = []
-            for arow in cursor.fetchall():
-                hashtags = json.loads(arow["hashtags"]) if arow["hashtags"] else []
-                adapted_contents.append(PlatformContent(
-                    platform=arow["platform"],
-                    platform_name=arow["platform_name"],
-                    title=arow["title"],
-                    content=arow["content"],
-                    hashtags=hashtags,
-                    image=arow["image"]
-                ))
-
-            return ContentItem(
-                id=row["id"],
-                original_text=row["original_text"],
-                original_image=row["original_image"],
-                created_at=row["created_at"],
-                adapted_contents=adapted_contents
-            )
-
-    def list(self, limit: int = 20, offset: int = 0, user_id: str = None) -> list[ContentItem]:
-        """获取内容列表"""
+    def list(self, limit: int = 20, offset: int = 0, user_id: str = None,
+             platform: str = None) -> list[ContentItem]:
+        """获取内容列表（含各平台适配内容）"""
         items = []
         with self._get_connection() as conn:
             cursor = conn.cursor(dictionary=True)
 
-            if user_id:
-                cursor.execute("""
-                    SELECT id, original_text, original_image, created_at
-                    FROM content_items
-                    WHERE user_id = %s
-                    ORDER BY created_at DESC
-                    LIMIT %s OFFSET %s
-                """, (user_id, limit, offset))
-            else:
-                cursor.execute("""
-                    SELECT id, original_text, original_image, created_at
-                    FROM content_items
-                    ORDER BY created_at DESC
-                    LIMIT %s OFFSET %s
-                """, (limit, offset))
+            base_select = """
+                SELECT DISTINCT ci.id, ci.original_text, ci.original_image,
+                       ci.original_images_json, ci.created_at
+                FROM content_items ci
+            """
+            if platform:
+                base_select += """
+                    INNER JOIN adapted_contents ac ON ac.item_id = ci.id AND ac.platform = %s
+                """
+            base_select += " WHERE 1=1"
+            params: list = []
 
-            for row in cursor.fetchall():
-                # 简化版，不加载适配内容
-                items.append(ContentItem(
-                    id=row["id"],
-                    original_text=row["original_text"][:100] + "..." if len(row["original_text"]) > 100 else row["original_text"],
-                    original_image=row["original_image"],
-                    adapted_contents=[],
-                    created_at=row["created_at"]
-                ))
+            if platform:
+                params.append(platform)
+            if user_id:
+                base_select += " AND ci.user_id = %s"
+                params.append(user_id)
+
+            base_select += " ORDER BY ci.created_at DESC LIMIT %s OFFSET %s"
+            params.extend([limit, offset])
+            cursor.execute(base_select, params)
+            rows = cursor.fetchall()
+
+            item_ids = [row["id"] for row in rows]
+            adapted_map = self._fetch_adapted_map(cursor, item_ids)
+
+            for row in rows:
+                adapted_contents = adapted_map.get(row["id"], [])
+                if platform:
+                    adapted_contents = [a for a in adapted_contents if a.platform == platform]
+                items.append(self._row_to_item(row, adapted_contents))
 
         return items
 
-    def count(self, user_id: str = None) -> int:
+    def count(self, user_id: str = None, platform: str = None) -> int:
         """获取总数"""
         with self._get_connection() as conn:
             cursor = conn.cursor()
+            query = "SELECT COUNT(DISTINCT ci.id) FROM content_items ci"
+            params: list = []
+            if platform:
+                query += " INNER JOIN adapted_contents ac ON ac.item_id = ci.id AND ac.platform = %s"
+                params.append(platform)
+            query += " WHERE 1=1"
             if user_id:
-                cursor.execute("SELECT COUNT(*) FROM content_items WHERE user_id = %s", (user_id,))
-            else:
-                cursor.execute("SELECT COUNT(*) FROM content_items")
+                query += " AND ci.user_id = %s"
+                params.append(user_id)
+            cursor.execute(query, params)
             return cursor.fetchone()[0]
 
     def delete(self, item_id: str, user_id: str = None) -> bool:
@@ -176,8 +260,11 @@ class MySQLStorageService:
                     return False
             cursor.execute("DELETE FROM adapted_contents WHERE item_id = %s", (item_id,))
             cursor.execute("DELETE FROM content_items WHERE id = %s", (item_id,))
+            deleted = cursor.rowcount > 0
             conn.commit()
-            return cursor.rowcount > 0
+            if deleted:
+                delete_draft_files(item_id)
+            return deleted
 
     # ===== 推送日志 =====
 
@@ -511,6 +598,8 @@ class MySQLStorageService:
         """)
 
         self._ensure_column(cursor, "content_items", "user_id", "VARCHAR(36) NULL")
+        self._ensure_column(cursor, "content_items", "original_images_json", "LONGTEXT NULL")
+        self._ensure_column(cursor, "adapted_contents", "images_json", "LONGTEXT NULL")
         self._ensure_column(cursor, "push_logs", "user_id", "VARCHAR(36) NULL")
 
 

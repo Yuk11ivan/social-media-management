@@ -128,19 +128,26 @@ export const contentApi = {
   save: (data: {
     original_text: string;
     original_image?: string;
+    original_images?: string[];
     adapted_contents: unknown[];
   }) =>
-    apiFetch<{ id: number }>('/api/content/save', {
+    apiFetch<{ id: string }>('/api/content/save', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
 
-  list: (limit = 20, offset = 0) =>
-    apiFetch<{ items: unknown[]; total: number }>(
-      `/api/content/list?limit=${limit}&offset=${offset}`
-    ),
+  list: (limit = 20, offset = 0, platform?: string) => {
+    const params = new URLSearchParams({
+      limit: String(limit),
+      offset: String(offset),
+    });
+    if (platform) params.set('platform', platform);
+    return apiFetch<{ items: unknown[]; total: number }>(
+      `/api/content/list?${params.toString()}`
+    );
+  },
 
-  delete: (id: number) =>
+  delete: (id: string) =>
     apiFetch<{ message: string }>(`/api/content/${id}`, {
       method: 'DELETE',
     }),
@@ -282,29 +289,6 @@ export const pushApi = {
     apiFetch<{ logs: unknown[] }>(
       `/api/push/logs?platform=${platform || ''}&limit=${limit}`
     ),
-};
-
-// === Material API ===
-export const materialApi = {
-  list: (limit = 50) =>
-    apiFetch<{ materials: unknown[] }>(`/api/materials?limit=${limit}`),
-
-  upload: (file: File, platform?: string) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    return apiFetch<{ id: number; name: string; file_path: string }>(
-      `/api/materials?platform=${platform || ''}`,
-      {
-        method: 'POST',
-        body: formData,
-      }
-    );
-  },
-
-  delete: (id: number) =>
-    apiFetch<{ message: string }>(`/api/materials/${id}`, {
-      method: 'DELETE',
-    }),
 };
 
 // === Image Generation API ===

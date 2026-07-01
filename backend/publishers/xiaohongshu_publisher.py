@@ -205,6 +205,14 @@ def _truncate_text(text: str, max_chars: int) -> str:
     return text[:max_chars - 1] + "…"
 
 
+def _safe_log(message: str) -> None:
+    """安全输出日志，避免 Windows GBK 控制台编码错误中断推送流程"""
+    try:
+        print(message)
+    except UnicodeEncodeError:
+        print(message.encode("utf-8", errors="replace").decode("utf-8", errors="replace"))
+
+
 def _run_script(cmd_parts: list[str], cwd: str) -> subprocess.CompletedProcess:
     """执行 Bun 脚本命令"""
     # 继承当前环境变量，并确保 XHS_CHROME_DEBUG_PORT 传递给 Bun 脚本
@@ -221,8 +229,8 @@ def _run_script(cmd_parts: list[str], cwd: str) -> subprocess.CompletedProcess:
         cmd_str = cmd_parts
         shell = False
 
-    print(f"[XHS] 执行命令: {cmd_str[:300]}...")
-    print(f"[XHS] 工作目录: {cwd}")
+    _safe_log(f"[XHS] 执行命令: {cmd_str[:300]}...")
+    _safe_log(f"[XHS] 工作目录: {cwd}")
 
     result = subprocess.run(
         cmd_str,
@@ -236,17 +244,17 @@ def _run_script(cmd_parts: list[str], cwd: str) -> subprocess.CompletedProcess:
         env=env,
     )
 
-    print(f"[XHS] 退出码: {result.returncode}")
+    _safe_log(f"[XHS] 退出码: {result.returncode}")
     if result.stdout:
         # 只打印最后 1000 字符（关键信息通常在最后）
         stdout = result.stdout
         if len(stdout) > 1000:
-            print(f"[XHS] stdout (前200): {stdout[:200]}")
-            print(f"[XHS] stdout (后800): {stdout[-800:]}")
+            _safe_log(f"[XHS] stdout (前200): {stdout[:200]}")
+            _safe_log(f"[XHS] stdout (后800): {stdout[-800:]}")
         else:
-            print(f"[XHS] stdout: {stdout}")
+            _safe_log(f"[XHS] stdout: {stdout}")
     if result.stderr:
-        print(f"[XHS] stderr: {result.stderr[-800:]}")
+        _safe_log(f"[XHS] stderr: {result.stderr[-800:]}")
 
     return result
 

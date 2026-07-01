@@ -3,14 +3,13 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sparkles, Send, Copy, Save, X, Check, AlertCircle,
-  Wand2, ImagePlus, Layers, FolderOpen
+  Wand2, ImagePlus, Layers,
 } from 'lucide-react';
 import PageTransition from '../components/ui/PageTransition';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
 import EmptyState from '../components/ui/EmptyState';
-import MaterialSelector from '../components/generate/MaterialSelector';
 import AiImagePanel from '../components/generate/AiImagePanel';
 import { useAuthStore } from '../store/authStore';
 import { useContentStore } from '../store/contentStore';
@@ -33,14 +32,29 @@ export default function GeneratePage() {
     isGenerating, error, setInputText,
     addImage, removeImage, clearImages,
     togglePlatform, generate, saveContent, clearError,
+    updateResult,
   } = useContentStore();
   const { statuses, fetchAllStatuses } = usePlatformStore();
   const { setPendingItems } = usePushStore();
 
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
-  const [showMaterialSelector, setShowMaterialSelector] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+  const [activeResultTab, setActiveResultTab] = useState<PlatformId | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const groupedResults = PLATFORM_ORDER
+    .filter(pid => selectedPlatforms.includes(pid))
+    .filter(pid => results.some(r => r.platform === pid));
+
+  useEffect(() => {
+    if (groupedResults.length === 0) {
+      setActiveResultTab(null);
+      return;
+    }
+    setActiveResultTab((prev) =>
+      prev && groupedResults.includes(prev) ? prev : groupedResults[0]
+    );
+  }, [results, selectedPlatforms]);
 
   useEffect(() => {
     if (token) {
@@ -96,6 +110,10 @@ export default function GeneratePage() {
 
   const handleSave = async () => {
     if (!checkAuth()) return;
+    if (results.length === 0) {
+      toast('请先生成内容', 'error');
+      return;
+    }
     const id = await saveContent();
     if (id) {
       toast('已保存到历史记录', 'success');
@@ -126,9 +144,11 @@ export default function GeneratePage() {
   };
 
   const charCount = inputText.length;
-  const groupedResults = PLATFORM_ORDER
-    .filter(pid => selectedPlatforms.includes(pid))
-    .filter(pid => results.some(r => r.platform === pid));
+
+  const formatHashtags = (hashtags?: string[] | string) => {
+    if (!hashtags) return '';
+    return Array.isArray(hashtags) ? hashtags.join(' ') : hashtags;
+  };
 
   return (
     <PageTransition>
@@ -318,15 +338,6 @@ export default function GeneratePage() {
                     <span className="text-xs">本地上传</span>
                   </button>
                 )}
-                {inputImages.length < MAX_IMAGES && (
-                  <button
-                    onClick={() => setShowMaterialSelector(true)}
-                    className="flex-1 py-4 rounded-xl border-2 border-dashed border-crystal-200 hover:border-gilt-400 transition-all flex flex-col items-center gap-1 text-crystal-500 hover:text-gilt-500 group"
-                  >
-                    <FolderOpen className="w-6 h-6" />
-                    <span className="text-xs">素材库选择</span>
-                  </button>
-                )}
               </div>
               <p className="text-center text-[11px] text-crystal-500">
                 支持 JPG/PNG/GIF/WebP，最大 5MB/张
@@ -388,8 +399,35 @@ export default function GeneratePage() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-8">
-                {groupedResults.map((pid) => {
+              <div className="space-y-6">
+                {/* 多平台切换 */}
+                {groupedResults.length > 1 && activeResultTab && (
+                  <div className="flex flex-wrap gap-2 p-1.5 rounded-2xl bg-crystal-100/80 border border-crystal-200">
+                    {groupedResults.map((pid) => {
+                      const p = PLATFORMS[pid];
+                      const active = activeResultTab === pid;
+                      return (
+                        <button
+                          key={pid}
+                          type="button"
+                          onClick={() => setActiveResultTab(pid)}
+                          className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                            active
+                              ? 'text-white shadow-sm'
+                              : 'text-crystal-600 hover:bg-white/80'
+                          }`}
+                          style={active ? { backgroundColor: p.color } : undefined}
+                        >
+                          {p.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {groupedResults
+                  .filter((pid) => groupedResults.length === 1 || pid === activeResultTab)
+                  .map((pid) => {
                   const platform = PLATFORMS[pid];
                   const platformResults = results.filter(r => r.platform === pid);
                   return (
@@ -399,10 +437,11 @@ export default function GeneratePage() {
                       initial="hidden"
                       animate="visible"
                     >
-                      {/* Platform header */}
-                      <div className="flex items-center gap-2 mb-4">
-                        <Badge platform={pid} size="md" />
-                      </div>
+                      {groupedResults.length === 1 && (
+                        <div className="flex items-center gap-2 mb-4">
+                          <Badge platform={pid} size="md" />
+                        </div>
+                      )}
 
                       {platformResults.map((result, idx) => {
                         const globalIdx = results.indexOf(result);
@@ -410,21 +449,27 @@ export default function GeneratePage() {
                         return (
                           <motion.div key={`${pid}-${idx}`} variants={staggerItem}>
                             <Card className="card-premium overflow-hidden">
-                              {/* Card header */}
-                              <div className="flex items-start justify-between mb-4">
-                                <div className="flex-1">
-                                  <h4 className="font-heading font-semibold text-crystal-900 mb-1">
-                                    {result.title}
-                                  </h4>
-                                </div>
+                              {/* 平台标签 */}
+                              <div className="flex justify-end mb-3">
                                 <Badge platform={pid} />
                               </div>
 
-                              {/* Content with markdown-style renders */}
-                              <div className="prose prose-sm max-w-none mb-4">
-                                <p className="text-sm text-crystal-600 leading-relaxed whitespace-pre-wrap">
-                                  {result.content}
-                                </p>
+                              {/* 可编辑标题与正文 */}
+                              <div className="mb-4 space-y-3">
+                                <input
+                                  type="text"
+                                  value={result.title}
+                                  onChange={(e) => updateResult(result.platform, { title: e.target.value })}
+                                  className="w-full font-heading font-semibold text-crystal-900 text-base bg-crystal-50/80 border border-crystal-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gilt-400/40 focus:border-gilt-400"
+                                  placeholder="标题"
+                                />
+                                <textarea
+                                  value={result.content}
+                                  onChange={(e) => updateResult(result.platform, { content: e.target.value })}
+                                  rows={14}
+                                  className="w-full text-sm text-crystal-600 leading-relaxed bg-crystal-50/80 border border-crystal-200 rounded-xl px-3 py-3 resize-y min-h-[200px] focus:outline-none focus:ring-2 focus:ring-gilt-400/40 focus:border-gilt-400"
+                                  placeholder="正文内容"
+                                />
                               </div>
 
                               {/* Image indicators */}
@@ -441,7 +486,7 @@ export default function GeneratePage() {
                               {result.hashtags && (
                                 <div className="mb-4 p-3 rounded-xl bg-gilt-50 border border-gilt-200/40">
                                   <p className="text-sm text-gilt-700 font-medium">
-                                    {result.hashtags}
+                                    {formatHashtags(result.hashtags)}
                                   </p>
                                 </div>
                               )}
@@ -466,7 +511,7 @@ export default function GeneratePage() {
                                   icon={<Save className="w-3.5 h-3.5" />}
                                   onClick={handleSave}
                                 >
-                                  保存
+                                  保存到历史
                                 </Button>
                                 <div className="flex-1" />
                                 <Button
@@ -488,10 +533,10 @@ export default function GeneratePage() {
                 })}
 
                 {/* AI 配图 */}
-                {results.length > 0 && (
+                {results.length > 0 && activeResultTab && (
                   <AiImagePanel
-                    content={results[0]?.content || inputText}
-                    title={results[0]?.title || ''}
+                    content={results.find((r) => r.platform === activeResultTab)?.content || inputText}
+                    title={results.find((r) => r.platform === activeResultTab)?.title || ''}
                     existingImages={inputImages}
                     onAddToImages={(img) => {
                       addImage(img);
@@ -509,7 +554,7 @@ export default function GeneratePage() {
                     className="flex gap-3 justify-center pt-4"
                   >
                     <Button variant="secondary" onClick={handleSave}>
-                      <Save className="w-4 h-4" /> 保存全部
+                      <Save className="w-4 h-4" /> 保存到历史
                     </Button>
                     <Button onClick={handlePush}>
                       <Send className="w-4 h-4" /> 推送全部
@@ -522,18 +567,6 @@ export default function GeneratePage() {
         </div>
       </div>
 
-      {/* Material Selector Modal */}
-      <AnimatePresence>
-        {showMaterialSelector && (
-          <MaterialSelector
-            selected={inputImages}
-            onSelect={(images) => {
-              images.forEach((img) => addImage(img));
-            }}
-            onClose={() => setShowMaterialSelector(false)}
-          />
-        )}
-      </AnimatePresence>
     </PageTransition>
   );
 }

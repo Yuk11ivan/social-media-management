@@ -11,12 +11,93 @@ from pathlib import Path
 import httpx
 from config import WECHAT_APP_ID, WECHAT_APP_SECRET
 
+UPLOAD_DIR = Path(__file__).parent / "uploads"
+
 
 # 微信 API 端点
 TOKEN_URL = "https://api.weixin.qq.com/cgi-bin/token"
 UPLOAD_IMG_URL = "https://api.weixin.qq.com/cgi-bin/media/uploadimg"
 UPLOAD_MATERIAL_URL = "https://api.weixin.qq.com/cgi-bin/material/add_material"
 DRAFT_ADD_URL = "https://api.weixin.qq.com/cgi-bin/draft/add"
+
+IMAGE_PLACEHOLDER_PATTERNS = [
+    r"\[插入图片\s*\d+\]",
+    r"\[配图\s*\d+\]",
+    r"\[图片\s*\d+\]",
+    r"\[配图建议[：:][^\]]*\]",
+    r"\[插入图\s*\d+\]",
+]
+
+
+def strip_image_placeholders(text: str) -> str:
+    """移除正文中所有图片占位符标记"""
+    import re
+    if not text:
+        return text
+    result = text
+    for pat in IMAGE_PLACEHOLDER_PATTERNS:
+        result = re.sub(pat, "", result, flags=re.IGNORECASE)
+    return re.sub(r"\n{3,}", "\n\n", result).strip()
+
+
+def _b64_decode_loose(data: str) -> bytes:
+    payload = data.strip()
+    if "," in payload and payload.startswith("data:"):
+        payload = payload.split(",", 1)[1]
+    missing = len(payload) % 4
+    if missing:
+        payload += "=" * (4 - missing)
+    return base64.b64decode(payload)
+
+
+def resolve_image_bytes(image_ref: str, client: httpx.Client = None) -> bytes:
+    """
+    将多种图片引用解析为二进制：
+    - data:image/...;base64,...
+    - /uploads/drafts/... 本地路径
+    - http(s):// URL
+    - 纯 base64 字符串
+    """
+    ref = (image_ref or "").strip()
+    if not ref:
+        raise ValueError("图片为空")
+
+    if ref.startswith("data:"):
+        return _b64_decode_loose(ref)
+
+    uploads_prefix = "/uploads/"
+    if ref.startswith(uploads_prefix):
+        local = UPLOAD_DIR / ref[len(uploads_prefix):].replace("/", os.sep)
+        if not local.exists():
+            raise FileNotFoundError(f"图片文件不存在: {ref}")
+        return local.read_bytes()
+
+    if ref.startswith("http://") or ref.startswith("https://"):
+        http = client or httpx.Client(timeout=60.0)
+        own_client = client is None
+        try:
+            resp = http.get(ref)
+            resp.raise_for_status()
+            return resp.content
+        finally:
+            if own_client:
+                http.close()
+
+    if ref.startswith("uploads/"):
+        local = UPLOAD_DIR / ref[len("uploads/"):].replace("/", os.sep)
+        if local.exists():
+            return local.read_bytes()
+
+    return _b64_decode_loose(ref)
+
+
+def guess_image_filename(image_ref: str, default: str = "image.png") -> str:
+    ref = (image_ref or "").split("?")[0]
+    if "/uploads/" in ref or ref.startswith("http"):
+        name = Path(ref).name
+        if name and "." in name:
+            return name
+    return default
 
 
 class WechatAPIError(Exception):
@@ -106,18 +187,15 @@ class WechatAPI:
 
     def upload_base64_image(self, image_b64: str, filename: str = "image.png") -> str:
         """
-        上传 Base64 编码的图片作为正文图片
+        上传图片作为正文图片（支持 base64、/uploads/ 路径、URL）
         返回图片 URL
         """
         self._ensure_token()
         url = f"{UPLOAD_IMG_URL}?access_token={self._access_token}"
 
-        # 去掉 data:image/xxx;base64, 前缀
-        if "," in image_b64:
-            image_b64 = image_b64.split(",", 1)[1]
-
-        image_data = base64.b64decode(image_b64)
-        content_type = "image/png" if filename.endswith(".png") else "image/jpeg"
+        image_data = resolve_image_bytes(image_b64, self._client)
+        filename = guess_image_filename(image_b64, filename)
+        content_type = "image/png" if filename.lower().endswith(".png") else "image/jpeg"
 
         files = {"media": (filename, image_data, content_type)}
         resp = self._client.post(url, files=files)
@@ -130,16 +208,15 @@ class WechatAPI:
 
     def upload_base64_cover(self, image_b64: str, filename: str = "cover.jpg") -> str:
         """
-        上传 Base64 编码的图片作为封面素材（自动裁剪为微信要求比例）
+        上传图片作为封面素材（支持 base64、/uploads/ 路径、URL）
         返回 media_id
         """
         self._ensure_token()
         url = f"{UPLOAD_MATERIAL_URL}?type=image&access_token={self._access_token}"
 
-        if "," in image_b64:
-            image_b64 = image_b64.split(",", 1)[1]
-
-        image_data = self._normalize_cover_bytes(base64.b64decode(image_b64))
+        image_data = self._normalize_cover_bytes(
+            resolve_image_bytes(image_b64, self._client)
+        )
         files = {"media": ("cover.jpg", image_data, "image/jpeg")}
         resp = self._client.post(url, files=files)
 
@@ -305,6 +382,18 @@ class WechatAPI:
                     in_list = False
                 continue
 
+            # 已是 HTML 图片块（占位符替换后）
+            if stripped.startswith("<") and "<img" in stripped:
+                if in_list:
+                    result.append("</ul>" if list_type == "ul" else "</ol>")
+                    in_list = False
+                result.append(stripped)
+                continue
+
+            # 图片占位符（未替换的残留，跳过）
+            if re.match(r"^\[插入图片\s*\d+\]", stripped, re.IGNORECASE):
+                continue
+
             # H2 ## Title
             h2_match = re.match(r"^##\s+(.+)", stripped)
             if h2_match:
@@ -458,10 +547,9 @@ class WechatAPI:
         """
         完整发布流程：
         1. 上传所有图片到微信 CDN
-        2. 精确替换 [插入图片N] 占位符
-        3. 未匹配的图片插入段落之间
-        4. 清理残留占位符
-        5. 生成 HTML → 创建草稿
+        2. 清理正文中的图片占位符
+        3. 将所有图片追加到文末
+        4. 生成 HTML → 创建草稿
         """
         import re
 
@@ -480,110 +568,21 @@ class WechatAPI:
         valid_urls = [u for u in body_image_urls if u is not None]
         print(f"[wechat_api] 图片上传: {len(valid_urls)}/{len(body_image_urls)} 成功")
 
-        # ===== Step 2: 替换占位符 =====
-        processed = content
+        # ===== Step 2: 清理正文中的占位符 =====
+        processed = strip_image_placeholders(content)
 
-        for i, url in enumerate(body_image_urls):
-            idx = i + 1
-            img_html = (
-                f'<p style="text-align:center;margin:20px 0;">'
-                f'<img src="{url}" style="max-width:100%;border-radius:8px;display:block;" '
-                f'alt="配图{idx}">'
-                f'</p>'
-            ) if url else ''
-
-            # 尝试多种占位符格式
-            patterns = [
-                rf'\[插入图片\s*{idx}\]',
-                rf'\[配图\s*{idx}\]',
-                rf'\[图片\s*{idx}\]',
-                rf'\[插入图\s*{idx}\]',
-            ]
-
-            replaced = False
-            for pat in patterns:
-                if re.search(pat, processed, re.IGNORECASE):
-                    processed = re.sub(pat, img_html, processed, count=1, flags=re.IGNORECASE)
-                    print(f"[wechat_api] ✓ 图片{idx} 替换占位符: {pat}")
-                    replaced = True
-                    break
-
-            if not replaced and url:
-                # 尝试替换 [配图建议：...] 占位符
-                suggest_match = re.search(r'\[配图建议[：:][^\]]*\]', processed)
-                if suggest_match:
-                    processed = processed.replace(suggest_match.group(0), img_html, 1)
-                    print(f"[wechat_api] ✓ 图片{idx} 替换配图建议")
-                    replaced = True
-
-        # ===== Step 3: 未匹配的图片插入段落之间 =====
-        unmatched_urls = []
-        for i, url in enumerate(body_image_urls):
-            if url is None:
-                continue
-            idx = i + 1
-            # 检查这个索引的占位符是否还在
-            still_there = any(
-                re.search(pat, processed, re.IGNORECASE)
-                for pat in [rf'\[插入图片\s*{idx}\]', rf'\[配图\s*{idx}\]', rf'\[图片\s*{idx}\]']
+        # ===== Step 3: 所有图片追加到文末 =====
+        if valid_urls:
+            image_blocks = '\n\n'.join(
+                f'![配图{i + 1}]({url})' for i, url in enumerate(body_image_urls) if url
             )
-            if still_there:
-                unmatched_urls.append((idx, url))
+            processed = f"{processed}\n\n{image_blocks}" if processed else image_blocks
+            print(f"[wechat_api] ✓ {len(valid_urls)} 张配图已追加到文末")
 
-        if unmatched_urls:
-            # 在段落之间分散插入
-            paragraphs = processed.split('\n\n')
-            new_paras = []
-            unmatched_iter = iter(unmatched_urls)
-            pending = next(unmatched_iter, None)
-
-            for pi, para in enumerate(paragraphs):
-                new_paras.append(para)
-                # 每隔1-2段插入一张图
-                if pending and pi > 0 and pi % 2 == 1:
-                    idx, url = pending
-                    img_html = (
-                        f'<p style="text-align:center;margin:20px 0;">'
-                        f'<img src="{url}" style="max-width:100%;border-radius:8px;" '
-                        f'alt="配图{idx}">'
-                        f'</p>'
-                    )
-                    new_paras.append(img_html)
-                    print(f"[wechat_api] ✓ 图片{idx} 插入到第{pi}段之后")
-                    pending = next(unmatched_iter, None)
-
-            # 剩余图片追加到末尾
-            if pending:
-                for idx, url in [(pending[0], pending[1])] + list(unmatched_iter):
-                    img_html = (
-                        f'<p style="text-align:center;margin:20px 0;">'
-                        f'<img src="{url}" style="max-width:100%;border-radius:8px;" '
-                        f'alt="配图{idx}">'
-                        f'</p>'
-                    )
-                    new_paras.append(img_html)
-                    print(f"[wechat_api] ✓ 图片{idx} 追加到文末")
-
-            processed = '\n\n'.join(new_paras)
-
-        # ===== Step 4: 清理所有残留占位符 =====
-        placeholder_patterns = [
-            r'\[插入图片\s*\d+\]',
-            r'\[配图\s*\d+\]',
-            r'\[图片\s*\d+\]',
-            r'\[配图建议[：:][^\]]*\]',
-            r'\[插入图\s*\d+\]',
-        ]
-        for pat in placeholder_patterns:
-            before = processed
-            processed = re.sub(pat, '', processed, flags=re.IGNORECASE)
-            if before != processed:
-                print(f"[wechat_api] 清理残留占位符: {pat}")
-
-        # ===== Step 5: 生成微信 HTML =====
+        # ===== Step 4: 生成微信 HTML =====
         html_content = self.markdown_to_wechat_html(title, processed, author, theme)
 
-        # ===== Step 6: 上传封面 =====
+        # ===== Step 5: 上传封面 =====
         thumb_media_id = ""
         if cover_image_b64:
             thumb_media_id = self.upload_base64_cover(cover_image_b64, "cover.png")
@@ -592,7 +591,7 @@ class WechatAPI:
         else:
             thumb_media_id = self._create_placeholder_cover(title)
 
-        # ===== Step 7: 创建草稿 =====
+        # ===== Step 6: 创建草稿 =====
         result = self.create_news_draft(
             title=title,
             content_html=html_content,

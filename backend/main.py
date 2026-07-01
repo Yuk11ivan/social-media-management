@@ -1,6 +1,17 @@
 """
 FastAPI 主应用 — 多平台账号自动化运营系统后端 v2.1
 """
+import sys
+
+# Windows 控制台默认 GBK，脚本输出含 emoji/特殊字符时 print 会抛 UnicodeEncodeError
+if sys.platform == "win32":
+    for _stream in (sys.stdout, sys.stderr):
+        if hasattr(_stream, "reconfigure"):
+            try:
+                _stream.reconfigure(encoding="utf-8", errors="replace")
+            except Exception:
+                pass
+
 from fastapi import FastAPI, HTTPException, Depends, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -14,7 +25,7 @@ from models import (
 )
 from ai_service import ai_service
 from storage_mysql import storage_service
-from wechat_api import WechatAPIError
+from wechat_api import WechatAPIError, strip_image_placeholders
 from datetime import datetime
 from pathlib import Path
 import uuid
@@ -178,18 +189,11 @@ async def save_content(
 ):
     """内容保存接口（需登录）"""
     try:
-        adapted_dicts = []
-        for ac in request.adapted_contents:
-            d = ac.model_dump()
-            if d.get("images"):
-                d["images_json"] = json.dumps(d["images"], ensure_ascii=False)
-            adapted_dicts.append(d)
-
-        import json as _json
         item = storage_service.save(
             original_text=request.original_text,
             original_image=request.original_image,
-            adapted_contents=adapted_dicts,
+            original_images=request.original_images,
+            adapted_contents=request.adapted_contents,
             user_id=current_user["id"],
         )
         return item
@@ -201,11 +205,15 @@ async def save_content(
 async def list_content(
     limit: int = 20,
     offset: int = 0,
+    platform: str = None,
     current_user: dict = Depends(get_current_user),
 ):
     try:
-        items = storage_service.list(limit=limit, offset=offset, user_id=current_user["id"])
-        total = storage_service.count(user_id=current_user["id"])
+        items = storage_service.list(
+            limit=limit, offset=offset,
+            user_id=current_user["id"], platform=platform or None,
+        )
+        total = storage_service.count(user_id=current_user["id"], platform=platform or None)
         return ContentListResponse(items=items, total=total)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取列表失败: {str(e)}")
@@ -434,7 +442,7 @@ async def push_to_platform(
                 cover_img = content.images[0]
 
             # 摘要
-            raw_content = content.content or ""
+            raw_content = strip_image_placeholders(content.content or "")
             digest = raw_content[:100].replace("#", "").replace("*", "").strip()
             if len(raw_content) > 100:
                 digest += "..."

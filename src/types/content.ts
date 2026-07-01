@@ -5,7 +5,7 @@ export interface PlatformContent {
   platform_name: string;
   title: string;
   content: string;
-  hashtags?: string;
+  hashtags?: string[] | string;
   image?: string;
   images?: string[];
 }
@@ -27,26 +27,26 @@ export interface ContentSaveRequest {
   adapted_contents: PlatformContent[];
 }
 
-export interface ContentItem {
-  id: number;
-  original_text: string;
-  original_image?: string;
-  created_at: string;
-  updated_at: string;
-  user_id: number;
-  adapted_contents?: AdaptedContent[];
-}
-
 export interface AdaptedContent {
-  id: number;
-  item_id: number;
+  id: string;
+  item_id: string;
   platform: PlatformId;
   platform_name: string;
   title: string;
   content: string;
-  hashtags?: string;
+  hashtags?: string[] | string;
   image?: string;
+  images?: string[];
   created_at: string;
+}
+
+export interface ContentItem {
+  id: string;
+  original_text: string;
+  original_image?: string;
+  original_images?: string[];
+  created_at: string;
+  adapted_contents?: AdaptedContent[];
 }
 
 export interface ContentListResponse {

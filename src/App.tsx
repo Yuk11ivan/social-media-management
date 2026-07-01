@@ -4,7 +4,6 @@ import AppLayout from './components/layout/AppLayout';
 
 import HomePage from './pages/HomePage';
 import GeneratePage from './pages/GeneratePage';
-import MaterialPage from './pages/MaterialPage';
 import PushPage from './pages/PushPage';
 import HistoryPage from './pages/HistoryPage';
 import AccountPage from './pages/AccountPage';
@@ -17,7 +16,6 @@ export default function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/generate" element={<GeneratePage />} />
-          <Route path="/material" element={<MaterialPage />} />
           <Route path="/push" element={<PushPage />} />
           <Route path="/history" element={<HistoryPage />} />
           <Route path="/account" element={<AccountPage />} />

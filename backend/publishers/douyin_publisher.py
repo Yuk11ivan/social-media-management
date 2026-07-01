@@ -10,6 +10,7 @@ import os
 import shutil
 import uuid
 import base64
+import time
 from config import DOUYIN_PROFILES_DIR, DOUYIN_CHROME_PATH, DOUYIN_BUN_COMMAND, DOUYIN_CHROME_DEBUG_PORT
 from auth.security import decrypt_secret
 from storage_mysql import storage_service
@@ -168,10 +169,54 @@ def _truncate_text(text: str, max_chars: int) -> str:
     return text[:max_chars - 1] + "…"
 
 
+def _kill_chrome_by_profile(profile_dir: Path) -> None:
+    """推送前关闭占用该 Profile 的 Chrome/Edge，避免 debug port 无法就绪"""
+    profile_str = str(profile_dir.resolve())
+    if os.name == "nt":
+        try:
+            ps = (
+                "Get-CimInstance Win32_Process | "
+                "Where-Object { $_.Name -match 'chrome|msedge' -and $_.CommandLine -like "
+                f"'*{profile_str.replace(chr(39), chr(39)*2)}*' }} | "
+                "ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"
+            )
+            subprocess.run(
+                ["powershell", "-NoProfile", "-Command", ps],
+                timeout=20,
+                capture_output=True,
+            )
+        except Exception:
+            pass
+    else:
+        try:
+            result = subprocess.run(
+                ["ps", "aux"],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            for line in (result.stdout or "").split("\n"):
+                if profile_str in line and "--remote-debugging-port=" in line:
+                    parts = line.split()
+                    if len(parts) > 1:
+                        subprocess.run(["kill", parts[1]], timeout=5)
+        except Exception:
+            pass
+
+
+def _safe_log(message: str) -> None:
+    """安全输出日志，避免 Windows GBK 控制台编码错误"""
+    try:
+        print(message)
+    except UnicodeEncodeError:
+        print(message.encode("utf-8", errors="replace").decode("utf-8", errors="replace"))
+
+
 def _run_script(cmd_parts: list[str], cwd: str) -> subprocess.CompletedProcess:
     """执行 Bun 脚本命令"""
     env = os.environ.copy()
     env["DY_CHROME_DEBUG_PORT"] = str(DOUYIN_CHROME_DEBUG_PORT)
+    env["DOUYIN_CHROME_DEBUG_PORT"] = str(DOUYIN_CHROME_DEBUG_PORT)
     env["PYTHONIOENCODING"] = "utf-8"
     if os.name == "nt":
         cmd_str = subprocess.list2cmdline(cmd_parts)
@@ -179,21 +224,21 @@ def _run_script(cmd_parts: list[str], cwd: str) -> subprocess.CompletedProcess:
     else:
         cmd_str = cmd_parts
         shell = False
-    print(f"[DY] 执行命令: {cmd_str[:300]}...")
+    _safe_log(f"[DY] 执行命令: {cmd_str[:300]}...")
     result = subprocess.run(
         cmd_str, capture_output=True, text=True, encoding="utf-8",
         errors="replace", timeout=300, cwd=cwd, shell=shell, env=env,
     )
-    print(f"[DY] 退出码: {result.returncode}")
+    _safe_log(f"[DY] 退出码: {result.returncode}")
     if result.stdout:
         stdout = result.stdout
         if len(stdout) > 1000:
-            print(f"[DY] stdout 前200: {stdout[:200]}")
-            print(f"[DY] stdout 后800: {stdout[-800:]}")
+            _safe_log(f"[DY] stdout 前200: {stdout[:200]}")
+            _safe_log(f"[DY] stdout 后800: {stdout[-800:]}")
         else:
-            print(f"[DY] stdout: {stdout}")
+            _safe_log(f"[DY] stdout: {stdout}")
     if result.stderr:
-        print(f"[DY] stderr: {result.stderr[-800:]}")
+        _safe_log(f"[DY] stderr: {result.stderr[-800:]}")
     return result
 
 
@@ -245,6 +290,16 @@ def publish_douyin(
             "登录成功后请手动关闭浏览器（点击 X），再进行推送"
         )
 
+    # 3.5 图文模式必须有配图
+    if not images or len(images) == 0:
+        raise DouyinPublisherError(
+            "抖音图文模式至少需要 1 张配图。请在内容生成页上传图片后重新生成，再推送。"
+        )
+
+    # 3.6 推送前关闭可能占用 Profile 的浏览器进程
+    _kill_chrome_by_profile(profile_dir)
+    time.sleep(2)
+
     # 4. 内容预处理
     safe_title = _truncate_text(title or "", DY_TITLE_MAX_CHARS)
     safe_content = _truncate_text(content or "", DY_CONTENT_MAX_CHARS)
@@ -295,7 +350,7 @@ def publish_douyin(
 
         cmd_parts.extend(["--meta", str(temp_meta).replace("\\", "/")])
 
-        cwd = str(scripts_dir.parent)
+        cwd = str(scripts_dir)
         result = _run_script(cmd_parts, cwd)
 
         if result.returncode != 0:
@@ -311,7 +366,7 @@ def publish_douyin(
 
         return {
             "success": True,
-            "message": "抖音文章已自动填入编辑器，请在创作者中心审核后发布",
+            "message": "抖音图文已上传图片并填入编辑器，请在创作者中心审核后发布",
             "output": result.stdout,
             "has_images": bool(images),
         }

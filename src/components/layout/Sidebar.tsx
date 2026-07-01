@@ -1,6 +1,6 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, ChevronRight, Home, Wand2, Image, Send, Archive, Settings, User, LogOut } from 'lucide-react';
+import { Sparkles, ChevronRight, Home, Wand2, Send, Archive, Settings, User, LogOut } from 'lucide-react';
 import { useUIStore } from '../../stores/uiStore';
 import { useAuthStore } from '../../store/authStore';
 import { cn } from '../../lib/utils';
@@ -8,7 +8,6 @@ import { cn } from '../../lib/utils';
 const NAV_ITEMS = [
   { to: '/', label: '首页', icon: Home },
   { to: '/generate', label: '内容生成', icon: Wand2 },
-  { to: '/material', label: '素材管理', icon: Image },
   { to: '/push', label: '推送发布', icon: Send },
   { to: '/history', label: '历史记录', icon: Archive },
   { to: '/platforms', label: '平台管理', icon: Settings },

@@ -39,7 +39,7 @@ export const PLATFORMS: Record<PlatformId, PlatformConfig> = {
     borderClass: 'border-douyin/30',
     hoverBgClass: 'hover:bg-douyin/5',
     apiStatus: 'live',
-    description: '文章发布，Chrome 自动填入编辑器，支持标题+正文+话题标签',
+    description: '图文发布，Chrome 自动上传图片并填入标题+描述+话题',
     contentStyle: '标题简洁有力、正文结构清晰、热门精准话题标签',
     bindRequired: true,
   },

@@ -5,7 +5,7 @@ import { Search, Bell, User, Settings, LogOut, Home, ChevronRight } from 'lucide
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../stores/uiStore';
 const PATH_LABELS: Record<string, string> = {
-  generate: '内容生成', material: '素材管理', push: '推送发布', history: '历史记录',
+  generate: '内容生成', push: '推送发布', history: '历史记录',
   platforms: '平台管理', account: '账户设置', wechat: '微信公众号', weibo: '微博', xiaohongshu: '小红书',
 };
 

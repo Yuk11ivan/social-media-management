@@ -3,7 +3,6 @@ import { useLocation } from 'react-router-dom';
 import { useIsHomePage } from '../../hooks/useIsHomePage';
 import { useUIStore } from '../../stores/uiStore';
 import NoiseOverlay from './NoiseOverlay';
-import OrganicShapes from './OrganicShapes';
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
 import HeaderBar from './HeaderBar';
@@ -31,9 +30,8 @@ export default function AppLayout({ children }: Props) {
 
       {isHomePage ? (
         <>
-          <OrganicShapes />
           <Navbar />
-          <main className="relative z-10 pt-16">
+          <main className="relative z-10 h-screen overflow-hidden">
             {children}
           </main>
         </>

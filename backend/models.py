@@ -73,12 +73,20 @@ class ContentSaveRequest(BaseModel):
     adapted_contents: List[PlatformContent]
 
 
+class AdaptedContentItem(PlatformContent):
+    """平台适配内容（含持久化 ID）"""
+    id: str
+    item_id: str
+    created_at: Optional[datetime] = None
+
+
 class ContentItem(BaseModel):
     """内容记录项"""
     id: str
     original_text: str
     original_image: Optional[str] = None
-    adapted_contents: List[PlatformContent]
+    original_images: Optional[List[str]] = None
+    adapted_contents: List[AdaptedContentItem] = []
     created_at: datetime
 
 
