@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { CheckCircle, Sparkles, Clock, Eye, EyeOff, ExternalLink } from 'lucide-react';
 import PageTransition from '../components/ui/PageTransition';
 import Button from '../components/ui/Button';
@@ -27,13 +27,14 @@ export default function PlatformsPage() {
   const dyRef = useRef<HTMLDivElement>(null);
 
   const {
-    statuses, fetchAllStatuses,
+    statuses, fetchAllStatuses, fetchWechatStatus,
     bindWechat, testWechat, unbindWechat,
     bindWeibo, testWeibo, openWeiboLogin, unbindWeibo,
     bindXiaohongshu, testXiaohongshu, openXiaohongshuLogin, unbindXiaohongshu,
     bindDouyin, testDouyin, openDouyinLogin, unbindDouyin,
-    isBinding, isTesting,
+    isBinding,
   } = usePlatformStore();
+  const navigate = useNavigate();
   const { token } = useAuthStore();
   const { toast } = useToast();
 
@@ -47,6 +48,7 @@ export default function PlatformsPage() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [profileDir, setProfileDir] = useState('');
   const [serverIp, setServerIp] = useState('');
+  const [testingPlatform, setTestingPlatform] = useState<string | null>(null);
 
   useEffect(() => { if (token) fetchAllStatuses(); }, [token]);
 
@@ -92,16 +94,19 @@ export default function PlatformsPage() {
   };
 
   const handleTest = async (p: 'wechat' | 'weibo' | 'xiaohongshu' | 'douyin') => {
+    setTestingPlatform(p);
     try {
       if (p === 'wechat') {
         await testWechat();
         toast('微信连接测试通过！', 'success');
+        await fetchWechatStatus();
       } else {
         const { test } = getBrowserHandlers(p);
         const result = await test();
         toast(result.message, result.success ? 'success' : 'error');
       }
     } catch (err: any) { toast(err.message || '测试失败', 'error'); }
+    finally { setTestingPlatform(null); }
   };
 
   const handleOpenLogin = async (p: 'weibo' | 'xiaohongshu' | 'douyin') => {
@@ -144,9 +149,9 @@ export default function PlatformsPage() {
       return (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <span className={`w-2 h-2 rounded-full ${st.connected ? 'bg-gilt-1000 animate-pulse' : 'bg-amber-500'}`} />
+            <span className={`w-2 h-2 rounded-full ${st.connected ? 'bg-gilt-500 animate-pulse' : 'bg-amber-500'}`} />
             <span className="text-sm text-crystal-600">
-              {st.connected ? '已连接' : isBrowser ? '待登录' : '连接异常'}
+              {st.connected ? '已连接' : isBrowser ? '待登录' : '未验证'}
             </span>
             {st.accountName && <><span className="text-crystal-500">·</span><span className="text-sm font-medium">{st.accountName}</span></>}
           </div>
@@ -160,7 +165,7 @@ export default function PlatformsPage() {
             {(!isBrowser || st.connected) && (
               <Button size="sm" variant="secondary" onClick={() => openModal(pid)}>修改配置</Button>
             )}
-            <Button size="sm" variant="ghost" onClick={() => handleTest(pid)} isLoading={isTesting}>测试连接</Button>
+            <Button size="sm" variant="ghost" onClick={() => handleTest(pid)} isLoading={testingPlatform === pid}>测试连接</Button>
             {isBrowser && st.connected && (
               <Button size="sm" variant="ghost" onClick={() => handleOpenLogin(pid)}>重新登录</Button>
             )}
@@ -183,6 +188,20 @@ export default function PlatformsPage() {
     ? (focusPlatform === 'wechat' ? '填写 AppID 与 AppSecret，推送图文至公众号草稿箱。'
       : '通过浏览器登录态绑定，自动填入内容编辑器。')
     : '绑定平台账号，一键生成并推送内容。';
+
+  if (!token) {
+    return (
+      <PageTransition>
+        <div className="px-6 py-8 max-w-[1200px]">
+          <div className="rounded-2xl border border-crystal-200 bg-white/60 p-12 text-center">
+            <p className="text-lg font-heading font-semibold text-crystal-900 mb-2">请先登录</p>
+            <p className="text-sm text-crystal-500 mb-4">登录后管理你的平台账号绑定</p>
+            <Button size="sm" onClick={() => navigate('/account')}>去登录</Button>
+          </div>
+        </div>
+      </PageTransition>
+    );
+  }
 
   return (
     <PageTransition>
@@ -267,16 +286,23 @@ export default function PlatformsPage() {
               <p>2. 进入「设置与开发」→「基本配置」</p>
               <p>3. 记录 <span className="mono-tag font-mono text-[11px] px-1 rounded">AppID</span> 和 <span className="mono-tag font-mono text-[11px] px-1 rounded">AppSecret</span>（需管理员扫码查看）</p>
               <p className="pt-1"><strong>IP 白名单（必须）：</strong></p>
-              <p>4. 同页面找到「IP白名单」→ 点击修改</p>
+              <p>4. 在微信开发者平台 → 公众号 → 基础信息 → 开发密钥 → APP IP白名单</p>
               <p>5. 添加服务器 IP：<span className="mono-tag font-mono text-[11px] px-1.5 py-0.5 rounded font-semibold">{serverIp || '加载中...'}</span></p>
               <p className="pt-1"><strong>绑定后：</strong></p>
               <p>6. 填写下方凭证 → 点击「绑定」</p>
               <p>7. AI 生成的图文可一键推送至公众号草稿箱</p>
-              <a href="https://mp.weixin.qq.com" target="_blank" rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-gilt-400/15 text-gilt-300 hover:bg-gilt-400/25 border border-gilt-400/20 transition-all">
-                <ExternalLink className="w-3.5 h-3.5" />
-                打开微信公众平台
-              </a>
+              <div className="flex flex-wrap gap-2 mt-2">
+                <a href="https://mp.weixin.qq.com" target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-gilt-400/15 text-gilt-300 hover:bg-gilt-400/25 border border-gilt-400/20 transition-all">
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  微信公众平台
+                </a>
+                <a href="https://developers.weixin.qq.com/platform?aibot=1&utm_source=community" target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-gilt-400/10 text-gilt-300/70 hover:bg-gilt-400/20 border border-gilt-400/15 transition-all">
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  IP白名单配置
+                </a>
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-crystal-600 mb-1">AppID</label>

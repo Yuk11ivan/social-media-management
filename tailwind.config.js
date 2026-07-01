@@ -37,10 +37,10 @@ export default {
           sand: '#E0D5CB',
         },
         // === Platform colors ===
-        wechat: '#1EBD6A',
-        xiaohongshu: '#F54A6A',
-        douyin: '#1E1B16',
-        weibo: '#E05244',
+        wechat: '#2DC87D',
+        xiaohongshu: '#FF6B7A',
+        douyin: '#4A90D9',
+        weibo: '#F7B84D',
       },
       fontFamily: {
         heading: ['"Noto Serif SC"', 'STSong', 'SimSun', 'serif'],

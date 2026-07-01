@@ -44,6 +44,20 @@ export default function PushPage() {
     return <AlertCircle className="w-4 h-4 text-crystal-500" />;
   };
 
+  if (!token) {
+    return (
+      <PageTransition>
+        <div className="px-6 py-8 max-w-[1200px]">
+          <div className="rounded-2xl border border-crystal-200 bg-white/60 p-12 text-center">
+            <p className="text-lg font-heading font-semibold text-crystal-900 mb-2">请先登录</p>
+            <p className="text-sm text-crystal-500 mb-4">登录后查看推送管理和推送日志</p>
+            <Button size="sm" onClick={() => navigate('/account')}>去登录</Button>
+          </div>
+        </div>
+      </PageTransition>
+    );
+  }
+
   return (
     <PageTransition>
       <div className="px-6 py-8 max-w-[1200px]">

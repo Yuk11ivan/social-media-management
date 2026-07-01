@@ -39,7 +39,7 @@ function TagRow({ words, direction, speed, size }: TagLine) {
 interface Props {
   badge: string;
   title: ReactNode;
-  subtitle: string;
+  subtitle: ReactNode;
   actions?: ReactNode;
   extra?: ReactNode;
   tags: TagLine[];
@@ -56,7 +56,7 @@ export default function HeroSlideLayout({ badge, title, subtitle, actions, extra
           <span className="text-xs sm:text-sm font-semibold text-gilt-200 tracking-wide uppercase">{badge}</span>
         </div>
 
-        <h2 className="text-4xl sm:text-5xl lg:text-[3.25rem] font-heading font-bold text-white leading-[1.35] -my-2">
+        <h2 className="text-4xl sm:text-5xl lg:text-[3rem] font-heading font-bold text-white leading-[1.35] -my-2 whitespace-nowrap">
           {title}
         </h2>
 

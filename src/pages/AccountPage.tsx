@@ -117,7 +117,7 @@ export default function AccountPage() {
           {(['login', 'register'] as Tab[]).map((t) => (
             <button key={t} onClick={() => { setTab(t); setError(''); }}
               className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 relative ${tab === t ? 'text-crystal-900' : 'text-crystal-500 hover:text-crystal-600'}`}>
-              {tab === t && <motion.div layoutId="tab-bg" className="absolute inset-1 bg-white rounded-md shadow-sm" transition={{ type: 'spring', stiffness: 380, damping: 30 }} />}
+              {tab === t && <motion.div layoutId="tab-bg" className="absolute inset-1 bg-gilt-200/60 rounded-md shadow-sm" transition={{ type: 'spring', stiffness: 380, damping: 30 }} />}
               <span className="relative z-10">{t === 'login' ? '登录' : '注册'}</span>
             </button>
           ))}

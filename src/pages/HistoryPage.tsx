@@ -387,7 +387,7 @@ function ContentList({
                         {item.original_text}
                       </div>
                       {adapted.map((ac) => (
-                        <div key={ac.id} className="p-4 rounded-xl bg-white/70 border border-crystal-200">
+                        <div key={ac.id} className="p-4 rounded-xl glass-card">
                           <div className="flex items-center justify-between mb-2">
                             <Badge platform={ac.platform} />
                             <button
@@ -426,7 +426,7 @@ function PushLogList({ logs, platformTab }: { logs: import('../types/push').Push
   return (
     <div className="space-y-2">
       {filtered.map((log) => (
-        <div key={log.id} className="flex items-start gap-3 p-4 rounded-xl bg-white/70 border border-crystal-200">
+        <div key={log.id} className="flex items-start gap-3 p-4 rounded-xl glass-card">
           <div className="pt-0.5">
             {log.status === 'success' && <CheckCircle className="w-4 h-4 text-green-500" />}
             {log.status === 'failed' && <XCircle className="w-4 h-4 text-red-500" />}

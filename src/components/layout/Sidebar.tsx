@@ -71,9 +71,9 @@ export default function Sidebar() {
               'flex items-center gap-3 rounded-xl hover:bg-white/8 transition-all',
               sidebarCollapsed ? 'justify-center p-2' : 'px-3 py-2.5'
             )}>
-              <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-                style={{ background: 'linear-gradient(135deg, #C8B590, #B8A278)' }}>
-                <User className="w-4 h-4 text-white" />
+              <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-sm font-bold text-white"
+                style={{ background: `linear-gradient(135deg, ${['#C8B590','#B8A278','#D9C9A8','#A08A60'][(user?.nickname||'?').charCodeAt(0)%4]}, ${['#B8A278','#A08A60','#C8B590','#887248'][(user?.nickname||'?').charCodeAt(0)%4]})` }}>
+                {(user?.nickname || '?').charAt(0).toUpperCase()}
               </div>
               {!sidebarCollapsed && (
                 <div className="flex-1 min-w-0">

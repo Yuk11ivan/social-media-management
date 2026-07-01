@@ -9,7 +9,7 @@ export interface HomeSlide {
   label: string;
   badge: string;
   title: ReactNode;
-  subtitle: string;
+  subtitle: ReactNode;
   actions?: ReactNode;
   extra?: ReactNode;
   tags: TagLine[];

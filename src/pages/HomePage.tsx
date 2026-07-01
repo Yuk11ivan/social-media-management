@@ -62,7 +62,7 @@ function StatItem({ label, value, suffix, icon, inView }: {
 }) {
   const c = useCountUp(value, 1800, inView);
   return (
-    <div className="text-center p-4 sm:p-5 rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm">
+    <div className="group text-center p-4 sm:p-5 rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm hover:bg-white/10 hover:border-white/[0.18] hover:backdrop-blur-md hover:shadow-[0_4px_20px_rgba(0,0,0,0.1)] transition-all duration-300">
       <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg mb-3 text-gilt-300"
         style={{ background: 'linear-gradient(135deg,rgba(255,255,255,0.12),rgba(255,255,255,0.04))' }}>
         {icon}
@@ -104,7 +104,7 @@ function FeatureList() {
   return (
     <div className="grid sm:grid-cols-2 gap-5 sm:gap-6">
       {FEATURES.map((f) => (
-        <div key={f.title} className="flex gap-4 p-5 sm:p-6 rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm">
+        <div key={f.title} className="flex gap-4 p-5 sm:p-6 rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm hover:bg-white/10 hover:border-white/[0.18] hover:backdrop-blur-md hover:shadow-[0_4px_20px_rgba(0,0,0,0.1)] transition-all duration-300">
           <div className="w-9 h-9 shrink-0 rounded-lg flex items-center justify-center text-gilt-300"
             style={{ background: 'linear-gradient(135deg,rgba(255,255,255,0.12),rgba(255,255,255,0.04))' }}>
             {f.icon}
@@ -123,7 +123,7 @@ function StepList() {
   return (
     <div className="space-y-5 sm:space-y-6">
       {STEPS.map((s) => (
-        <div key={s.step} className="flex gap-4 p-5 sm:p-6 rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm items-start">
+        <div key={s.step} className="flex gap-4 p-5 sm:p-6 rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm items-start hover:bg-white/10 hover:border-white/[0.18] hover:backdrop-blur-md hover:shadow-[0_4px_20px_rgba(0,0,0,0.1)] transition-all duration-300">
           <div className="w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
             style={{ background: 'linear-gradient(135deg,#C8B590,#A08A60)' }}>
             {s.step}
@@ -143,7 +143,7 @@ function UseCaseList() {
   return (
     <div className="grid sm:grid-cols-2 gap-5 sm:gap-6">
       {USE_CASES.map((u) => (
-        <div key={u.title} className="flex gap-4 p-5 sm:p-6 rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm">
+        <div key={u.title} className="flex gap-4 p-5 sm:p-6 rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm hover:bg-white/10 hover:border-white/[0.18] hover:backdrop-blur-md hover:shadow-[0_4px_20px_rgba(0,0,0,0.1)] transition-all duration-300">
           <div className="w-9 h-9 shrink-0 rounded-lg flex items-center justify-center text-gilt-300"
             style={{ background: 'linear-gradient(135deg,rgba(255,255,255,0.12),rgba(255,255,255,0.04))' }}>
             {u.icon}
@@ -160,14 +160,14 @@ function UseCaseList() {
 
 function PlatformLinks() {
   return (
-    <div className="flex flex-wrap items-center gap-5 sm:gap-6">
+    <div className="grid grid-cols-2 gap-3 sm:gap-4">
       {PLATFORM_ORDER.map((pid) => {
         const p = PLATFORMS[pid];
         return (
           <Link
             key={pid}
             to={p.apiStatus === 'live' ? `/platforms/${pid}` : '/platforms'}
-            className="flex items-center gap-3 px-6 py-3 rounded-full border border-white/15 bg-white/8 backdrop-blur-sm text-sm font-medium text-white/80 hover:text-white hover:border-gilt-400/40 hover:bg-white/12 transition-all"
+            className="flex items-center justify-center gap-3 px-6 py-3 rounded-full border border-white/15 bg-white/8 backdrop-blur-sm text-sm font-medium text-white/80 hover:text-white hover:border-gilt-400/40 hover:bg-white/12 transition-all"
           >
             <span className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }} />
             {p.name}
@@ -309,7 +309,7 @@ export default function HomePage() {
       label: '立即开始',
       badge: 'Get Started',
       title: '准备好提升运营效率了吗？',
-      subtitle: '免费开始，用 AI 驱动你的多平台内容运营',
+      subtitle: <span>免费开始，用 AI 驱动你的多平台内容运营<br/>Are you ready？</span>,
       actions: (
         <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
           onClick={() => navigate(token ? '/generate' : '/account')}
