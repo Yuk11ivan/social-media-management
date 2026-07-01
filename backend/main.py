@@ -79,6 +79,22 @@ app.include_router(auth_router)
 app.include_router(platforms_router)
 
 
+# ===== 系统信息 =====
+
+@app.get("/api/system/server-ip")
+async def get_server_ip():
+    """返回服务器公网 IP（供微信公众号 IP 白名单配置使用）"""
+    import urllib.request
+    try:
+        ip = urllib.request.urlopen("https://ifconfig.me", timeout=5).read().decode().strip()
+    except Exception:
+        try:
+            ip = urllib.request.urlopen("https://icanhazip.com", timeout=5).read().decode().strip()
+        except Exception:
+            ip = ""
+    return {"ip": ip}
+
+
 @app.on_event("startup")
 async def startup_event():
     """应用启动：初始化数据库"""

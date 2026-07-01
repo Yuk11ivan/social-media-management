@@ -320,3 +320,49 @@ body {
   background: rgba(212, 191, 138, 0.35);
   color: #fff;
 }
+
+/* ===== Dark Modal (dashboard pages) ===== */
+.modal-dark {
+  background: rgba(28, 26, 22, 0.96) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(120%) !important;
+  backdrop-filter: blur(24px) saturate(120%) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.9);
+}
+.modal-dark .modal-header { border-bottom-color: rgba(255, 255, 255, 0.08) !important; }
+.modal-dark .modal-title { color: rgba(255, 255, 255, 0.95) !important; }
+.modal-dark .modal-close { color: rgba(255, 255, 255, 0.45); }
+.modal-dark .modal-close:hover { background: rgba(255, 255, 255, 0.08) !important; color: rgba(255, 255, 255, 0.7); }
+
+.modal-dark label { color: rgba(255, 255, 255, 0.55) !important; }
+.modal-dark label .text-crystal-500 { color: rgba(255, 255, 255, 0.35) !important; }
+.modal-dark input:not([type='checkbox']):not([type='radio']),
+.modal-dark textarea {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+.modal-dark input::placeholder,
+.modal-dark textarea::placeholder { color: rgba(255, 255, 255, 0.25) !important; }
+.modal-dark input:focus,
+.modal-dark textarea:focus {
+  border-color: rgba(200, 181, 144, 0.4) !important;
+  box-shadow: 0 0 0 2px rgba(200, 181, 144, 0.15) !important;
+}
+.modal-dark .guide-box {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+.modal-dark .guide-box strong,
+.modal-dark .guide-box .text-crystal-700 { color: rgba(255, 255, 255, 0.88) !important; }
+.modal-dark .guide-box .text-gilt-700 { color: #D9C9A8 !important; }
+.modal-dark .guide-box code { background: rgba(255, 255, 255, 0.08) !important; color: rgba(255, 255, 255, 0.7) !important; }
+.modal-dark .guide-box .mono-tag { background: rgba(255, 255, 255, 0.08) !important; }
+.modal-dark .text-crystal-600 { color: rgba(255, 255, 255, 0.65) !important; }
+.modal-dark .text-crystal-500 { color: rgba(255, 255, 255, 0.4) !important; }
+.modal-dark .text-crystal-900 { color: rgba(255, 255, 255, 0.92) !important; }
+.modal-dark .bg-crystal-50 { background: rgba(255, 255, 255, 0.04) !important; }
+.modal-dark .border-crystal-200 { border-color: rgba(255, 255, 255, 0.08) !important; }
+.modal-dark .hover\:bg-crystal-100:hover { background: rgba(255, 255, 255, 0.08) !important; }
+.modal-dark .text-amber-600 { color: #fbbf24 !important; }

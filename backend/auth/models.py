@@ -30,3 +30,13 @@ class UserResponse(BaseModel):
     nickname: Optional[str] = None
     phone: Optional[str] = None
     created_at: datetime
+
+
+class UpdateProfileRequest(BaseModel):
+    nickname: Optional[str] = Field(default=None, max_length=100)
+    phone: Optional[str] = Field(default=None, max_length=20)
+
+
+class ChangePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str = Field(min_length=6, max_length=128)

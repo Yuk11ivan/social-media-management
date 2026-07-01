@@ -70,7 +70,7 @@ export default function PushPage() {
           </h2>
 
           {pendingItems.length === 0 ? (
-            <div className="rounded-2xl border border-crystal-200 bg-white/60 p-12 text-center">
+            <div className="rounded-2xl border border-crystal-200 glass-card p-12 text-center">
               <p className="text-sm text-crystal-500 mb-3">暂无待推送内容</p>
               <p className="text-xs text-crystal-400 mb-4">AI 生成内容后添加至此</p>
               <Button size="sm" onClick={() => navigate('/generate')}>生成内容</Button>
@@ -79,7 +79,7 @@ export default function PushPage() {
             <div className="space-y-3">
               {pendingItems.map((item) => (
                 <div key={`${item.platform}-${item.title}`}
-                  className="rounded-2xl border border-crystal-200 bg-white/70 p-5 flex items-center gap-4">
+                  className="rounded-2xl border border-crystal-200 glass-card p-5 flex items-center gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <Badge platform={item.platform} />
@@ -125,14 +125,14 @@ export default function PushPage() {
           {isLoadingLogs ? (
             <div className="flex justify-center py-12"><div className="w-8 h-8 border-2 border-gilt-500 border-t-transparent rounded-full animate-spin" /></div>
           ) : filteredLogs.length === 0 ? (
-            <div className="rounded-2xl border border-crystal-200 bg-white/60 p-12 text-center">
+            <div className="rounded-2xl border border-crystal-200 glass-card p-12 text-center">
               <p className="text-sm text-crystal-500">暂无推送日志</p>
               <p className="text-xs text-crystal-400 mt-1">推送后记录显示在此</p>
             </div>
           ) : (
             <div className="space-y-2">
               {filteredLogs.map(log => (
-                <div key={log.id} className="rounded-xl border border-crystal-200 bg-white/70 px-5 py-3.5 flex items-center gap-4">
+                <div key={log.id} className="rounded-xl border border-crystal-200 glass-card px-5 py-3.5 flex items-center gap-4">
                   <div className={`w-2 h-2 rounded-full ${log.status === 'success' ? 'bg-gilt-500' : log.status === 'failed' ? 'bg-red-500' : 'bg-amber-500'}`} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">

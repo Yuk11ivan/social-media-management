@@ -1,6 +1,6 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useHomeStore } from '../../store/homeStore';
 import ImageCarouselBackground from './ImageCarouselBackground';
 import HeroSlideLayout, { type TagLine } from './HeroSlideLayout';
 
@@ -17,16 +17,41 @@ export interface HomeSlide {
 
 interface Props {
   slides: HomeSlide[];
-  footer?: ReactNode;
 }
 
-export default function HomeFullPageCarousel({ slides, footer }: Props) {
+export default function HomeFullPageCarousel({ slides }: Props) {
   const [index, setIndex] = useState(0);
   const count = slides.length;
   const slide = slides[index];
 
-  const prev = () => setIndex((i) => (i - 1 + count) % count);
-  const next = () => setIndex((i) => (i + 1) % count);
+  const targetSlide = useHomeStore((s) => s.targetSlide);
+  const clearTargetSlide = useHomeStore((s) => s.clearTargetSlide);
+
+  // Wheel: scroll down → next slide, scroll up → prev slide (debounced)
+  const lastWheel = useRef(0);
+  useEffect(() => {
+    const onWheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaY) < 30) return; // ignore tiny scrolls
+      const now = Date.now();
+      if (now - lastWheel.current < 800) return; // 800ms cooldown
+      lastWheel.current = now;
+      if (e.deltaY > 0) {
+        setIndex((i) => (i + 1) % count);
+      } else {
+        setIndex((i) => (i - 1 + count) % count);
+      }
+    };
+    window.addEventListener('wheel', onWheel, { passive: true });
+    return () => window.removeEventListener('wheel', onWheel);
+  }, [count]);
+
+  // Jump to slide when triggered from Navbar dropdown
+  useEffect(() => {
+    if (targetSlide !== null) {
+      setIndex(targetSlide);
+      clearTargetSlide();
+    }
+  }, [targetSlide, clearTargetSlide]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -42,7 +67,7 @@ export default function HomeFullPageCarousel({ slides, footer }: Props) {
       <ImageCarouselBackground showDots={false} autoPlay />
 
       <div className="relative z-10 h-full flex flex-col">
-        <div className="flex-1 flex items-center px-6 sm:px-10 lg:px-12 pt-20 pb-32">
+        <div className="flex-1 flex items-center px-6 sm:px-10 lg:px-12 pt-20 pb-10">
           <div className="w-full max-w-7xl mx-auto">
             <AnimatePresence mode="wait">
               <motion.div
@@ -62,51 +87,6 @@ export default function HomeFullPageCarousel({ slides, footer }: Props) {
                 />
               </motion.div>
             </AnimatePresence>
-          </div>
-        </div>
-
-        <div className="absolute bottom-0 left-0 right-0 z-20">
-          {footer && (
-            <div className="border-t border-white/10 bg-black/25 backdrop-blur-md px-4 py-3">
-              {footer}
-            </div>
-          )}
-
-          <div className={`flex items-center justify-between gap-4 px-4 sm:px-8 ${footer ? 'pb-3 pt-3' : 'pb-6 pt-3'}`}>
-            <button
-              type="button"
-              onClick={prev}
-              aria-label="上一屏"
-              className="w-10 h-10 rounded-full border border-white/20 bg-white/10 backdrop-blur-md text-white hover:bg-white/20 transition-colors flex items-center justify-center shrink-0"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-
-            <div className="flex flex-wrap justify-center gap-2 max-w-[65vw]">
-              {slides.map((s, i) => (
-                <button
-                  key={s.id}
-                  type="button"
-                  onClick={() => setIndex(i)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                    i === index
-                      ? 'bg-white text-crystal-900'
-                      : 'border border-white/20 text-white/75 hover:bg-white/10 hover:text-white'
-                  }`}
-                >
-                  {s.label}
-                </button>
-              ))}
-            </div>
-
-            <button
-              type="button"
-              onClick={next}
-              aria-label="下一屏"
-              className="w-10 h-10 rounded-full border border-white/20 bg-white/10 backdrop-blur-md text-white hover:bg-white/20 transition-colors flex items-center justify-center shrink-0"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
           </div>
         </div>
       </div>

@@ -257,7 +257,7 @@ export default function GeneratePage() {
                 onChange={(e) => setInputText(e.target.value)}
                 placeholder="输入你想发布的内容...&#10;&#10;AI 会自动为每个平台生成适配的：&#10;• 吸引人的标题&#10;• 风格适配的正文&#10;• 热门话题标签&#10;• 配图位置建议"
                 rows={10}
-                className="w-full px-4 py-3 rounded-xl border border-crystal-200 bg-white text-sm text-crystal-900 placeholder:text-crystal-500 resize-none focus:outline-none focus:ring-2 focus:ring-gilt-400 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 rounded-xl border border-crystal-200/60 bg-white/40 text-sm text-crystal-900 placeholder:text-crystal-500 resize-none focus:outline-none focus:ring-2 focus:ring-gilt-400 focus:border-transparent transition-all"
               />
             </Card>
 
@@ -460,14 +460,14 @@ export default function GeneratePage() {
                                   type="text"
                                   value={result.title}
                                   onChange={(e) => updateResult(result.platform, { title: e.target.value })}
-                                  className="w-full font-heading font-semibold text-crystal-900 text-base bg-crystal-50/80 border border-crystal-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gilt-400/40 focus:border-gilt-400"
+                                  className="w-full font-heading font-semibold text-crystal-900 text-base bg-white/40 border border-crystal-200/60 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gilt-400/40 focus:border-gilt-400"
                                   placeholder="标题"
                                 />
                                 <textarea
                                   value={result.content}
                                   onChange={(e) => updateResult(result.platform, { content: e.target.value })}
                                   rows={14}
-                                  className="w-full text-sm text-crystal-600 leading-relaxed bg-crystal-50/80 border border-crystal-200 rounded-xl px-3 py-3 resize-y min-h-[200px] focus:outline-none focus:ring-2 focus:ring-gilt-400/40 focus:border-gilt-400"
+                                  className="w-full text-sm text-crystal-700 leading-relaxed bg-white/40 border border-crystal-200/60 rounded-xl px-3 py-3 resize-y min-h-[200px] focus:outline-none focus:ring-2 focus:ring-gilt-400/40 focus:border-gilt-400"
                                   placeholder="正文内容"
                                 />
                               </div>

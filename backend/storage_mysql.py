@@ -515,6 +515,20 @@ class MySQLStorageService:
             """, (phone,))
             return cursor.fetchone()
 
+    def update_user(self, user_id: str, **kwargs) -> Optional[dict]:
+        """更新用户资料（nickname / phone / password_hash）"""
+        allowed = {"nickname", "phone", "password_hash"}
+        fields = {k: v for k, v in kwargs.items() if k in allowed and v is not None}
+        if not fields:
+            return self.get_user_by_id(user_id)
+        set_clause = ", ".join(f"{k} = %s" for k in fields)
+        values = list(fields.values()) + [user_id]
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(f"UPDATE users SET {set_clause} WHERE id = %s", values)
+            conn.commit()
+        return self.get_user_by_id(user_id)
+
     def upsert_platform_account(self, user_id: str, platform: str, app_id: str,
                                 app_secret_enc: str, account_id: str = None,
                                 account_name: str = None) -> dict:

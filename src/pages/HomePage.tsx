@@ -324,20 +324,5 @@ export default function HomePage() {
     },
   ];
 
-  const footer = (
-    <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-white/50 text-xs sm:text-sm">
-      <div className="flex items-center gap-2">
-        <Sparkles className="w-4 h-4 text-gilt-300/80" />
-        <span className="text-white/70 font-medium">Altus 奥途智营</span>
-      </div>
-      <p>&copy; {new Date().getFullYear()} Altus 奥途智营 · 多平台内容智能运营</p>
-      <div className="flex gap-4">
-        <span className="hover:text-white/80 cursor-pointer transition-colors">隐私政策</span>
-        <span className="hover:text-white/80 cursor-pointer transition-colors">服务条款</span>
-        <span className="hover:text-white/80 cursor-pointer transition-colors">联系我们</span>
-      </div>
-    </div>
-  );
-
-  return <HomeFullPageCarousel slides={slides} footer={footer} />;
+  return <HomeFullPageCarousel slides={slides} />;
 }

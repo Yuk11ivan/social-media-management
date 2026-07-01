@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Bell, User, Settings, LogOut, Home, ChevronRight } from 'lucide-react';
+import { User, Settings, LogOut, Home, ChevronRight } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../stores/uiStore';
 
@@ -14,7 +14,6 @@ export default function HeaderBar() {
   const location = useLocation();
   const { token, user, logout } = useAuthStore();
   const { sidebarCollapsed } = useUIStore();
-  const [searchFocused, setSearchFocused] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   const breadcrumbs = useMemo(() => {
@@ -48,20 +47,6 @@ export default function HeaderBar() {
         </nav>
 
         <div className="flex items-center gap-3">
-          <motion.div animate={{ width: searchFocused ? 220 : 160 }} transition={{ duration: 0.3 }} className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
-            <input
-              onFocus={() => setSearchFocused(true)}
-              onBlur={() => setSearchFocused(false)}
-              placeholder="搜索..."
-              className="w-full h-9 pl-9 pr-3 rounded-lg bg-white/8 border border-white/15 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-gilt-400/25 focus:border-gilt-400/35 transition-all"
-            />
-          </motion.div>
-          <button className="relative p-2 rounded-lg hover:bg-white/10 transition-colors">
-            <Bell className="w-5 h-5 text-white/70" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-gilt-400" />
-          </button>
-
           {token ? (
             <div className="relative">
               <button onClick={() => setUserMenuOpen(!userMenuOpen)} className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-white/10 transition-colors">

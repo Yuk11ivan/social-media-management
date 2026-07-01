@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
-import { CheckCircle, Sparkles, Clock, Eye, EyeOff } from 'lucide-react';
+import { CheckCircle, Sparkles, Clock, Eye, EyeOff, ExternalLink } from 'lucide-react';
 import PageTransition from '../components/ui/PageTransition';
 import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
@@ -9,6 +9,7 @@ import { usePlatformStore } from '../store/platformStore';
 import { useAuthStore } from '../store/authStore';
 import { useToast } from '../components/ui/Toast';
 import { PLATFORMS, PLATFORM_ORDER } from '../config/platforms';
+import { systemApi } from '../config/api';
 import type { PlatformId } from '../types/platform';
 
 export default function PlatformsPage() {
@@ -45,8 +46,13 @@ export default function PlatformsPage() {
   const [accountName, setAccountName] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [profileDir, setProfileDir] = useState('');
+  const [serverIp, setServerIp] = useState('');
 
   useEffect(() => { if (token) fetchAllStatuses(); }, [token]);
+
+  useEffect(() => {
+    systemApi.getServerIp().then(res => setServerIp(res.ip || '')).catch(() => {});
+  }, []);
 
   // scroll to focused platform
   useEffect(() => {
@@ -212,7 +218,7 @@ export default function PlatformsPage() {
               >
                 <motion.div
                   whileHover={isLive ? { y: -3, transition: { duration: 0.3, ease: [0.175, 0.885, 0.32, 1.275] } } : undefined}
-                  className={`card-premium p-6 rounded-2xl group relative overflow-hidden ${!isLive ? 'opacity-80' : ''} ${focusPlatform === pid ? 'ring-2 ring-gilt-400/60 ring-offset-2 shadow-lg' : ''}`}
+                  className={`card-premium p-5 rounded-2xl group relative overflow-hidden ${!isLive ? 'opacity-80' : ''} ${focusPlatform === pid ? 'ring-2 ring-gilt-400/60 ring-offset-2 shadow-lg' : ''}`}
                 >
                   <div className="flex items-center gap-4 mb-4">
                     <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-heading font-bold text-lg" style={{ backgroundColor: p.color }}>
@@ -227,7 +233,19 @@ export default function PlatformsPage() {
                     </div>
                   </div>
                   <p className="text-sm text-crystal-600 mb-4">{p.description}</p>
-                  <div className="border-t border-crystal-200 pt-4">
+                  {isBindable && pid === 'wechat' && (
+                    <p className="text-[11px] text-gilt-600/80 mb-3 flex items-center gap-1.5">
+                      <span className="w-1 h-1 rounded-full bg-gilt-500" />
+                      通过官方 API 对接（AppID + AppSecret），非浏览器脚本
+                    </p>
+                  )}
+                  {isBindable && pid !== 'wechat' && (
+                    <p className="text-[11px] text-crystal-500 mb-3 flex items-center gap-1.5">
+                      <span className="w-1 h-1 rounded-full bg-crystal-400" />
+                      通过浏览器登录态绑定，自动填入编辑器
+                    </p>
+                  )}
+                  <div className="border-t border-crystal-200 pt-3">
                     {isBindable ? renderBindSection(pid as 'wechat' | 'weibo' | 'xiaohongshu' | 'douyin')
                       : <p className="text-xs text-crystal-500">{isMock ? 'API 集成中，AI 内容生成可用，推送即将开放。' : '该平台已纳入开发计划。'}</p>}
                   </div>
@@ -240,8 +258,26 @@ export default function PlatformsPage() {
         </div>
 
         {/* ---- 微信 Modal ---- */}
-        <Modal isOpen={modal === 'wechat'} onClose={() => setModal(null)} title="绑定微信公众号">
-          <form onSubmit={handleWechatBind} className="space-y-4">
+        <Modal isOpen={modal === 'wechat'} onClose={() => setModal(null)} title="绑定微信公众号" dark maxWidth="max-w-md">
+          <form onSubmit={handleWechatBind} className="space-y-3">
+            <div className="guide-box text-xs rounded-lg px-3 py-2.5 space-y-1.5 border">
+              <p className="font-semibold text-crystal-700">通过官方 API 对接，与浏览器脚本绑定方式不同</p>
+              <p><strong>获取凭证：</strong></p>
+              <p>1. 登录微信公众平台（mp.weixin.qq.com）</p>
+              <p>2. 进入「设置与开发」→「基本配置」</p>
+              <p>3. 记录 <span className="mono-tag font-mono text-[11px] px-1 rounded">AppID</span> 和 <span className="mono-tag font-mono text-[11px] px-1 rounded">AppSecret</span>（需管理员扫码查看）</p>
+              <p className="pt-1"><strong>IP 白名单（必须）：</strong></p>
+              <p>4. 同页面找到「IP白名单」→ 点击修改</p>
+              <p>5. 添加服务器 IP：<span className="mono-tag font-mono text-[11px] px-1.5 py-0.5 rounded font-semibold">{serverIp || '加载中...'}</span></p>
+              <p className="pt-1"><strong>绑定后：</strong></p>
+              <p>6. 填写下方凭证 → 点击「绑定」</p>
+              <p>7. AI 生成的图文可一键推送至公众号草稿箱</p>
+              <a href="https://mp.weixin.qq.com" target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-gilt-400/15 text-gilt-300 hover:bg-gilt-400/25 border border-gilt-400/20 transition-all">
+                <ExternalLink className="w-3.5 h-3.5" />
+                打开微信公众平台
+              </a>
+            </div>
             <div>
               <label className="block text-sm font-medium text-crystal-600 mb-1">AppID</label>
               <input type="text" required minLength={10} value={appId} onChange={e => setAppId(e.target.value)}
@@ -267,9 +303,9 @@ export default function PlatformsPage() {
         </Modal>
 
         {/* ---- 微博 Modal ---- */}
-        <Modal isOpen={modal === 'weibo'} onClose={() => setModal(null)} title="绑定微博">
-          <form onSubmit={(e) => handleBrowserBind('weibo', e)} className="space-y-4">
-            <div className="text-xs text-crystal-600 bg-crystal-50 border border-crystal-200 rounded-lg px-3 py-2 space-y-1">
+        <Modal isOpen={modal === 'weibo'} onClose={() => setModal(null)} title="绑定微博" dark maxWidth="max-w-md">
+          <form onSubmit={(e) => handleBrowserBind('weibo', e)} className="space-y-3">
+            <div className="guide-box text-xs rounded-lg px-3 py-2.5 space-y-1 border">
               <p><strong>绑定步骤：</strong></p>
               <p>1. 填写备注（选填）→ 点击「绑定」</p>
               <p>2. 点击「打开浏览器登录」</p>
@@ -284,11 +320,11 @@ export default function PlatformsPage() {
               {showAdvanced ? '收起高级选项' : '展开高级选项（一般不需要填）'}
             </button>
             {showAdvanced && (
-              <div className="p-4 rounded-xl bg-crystal-50 border border-crystal-200">
+              <div className="p-3 rounded-xl guide-box border">
                 <label className="block text-sm font-medium text-crystal-900 mb-1.5">Chrome Profile 路径</label>
                 <input type="text" value={profileDir} onChange={e => setProfileDir(e.target.value)}
                   className="w-full px-4 py-2.5 rounded-xl border border-crystal-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-gilt-400 focus:border-transparent" placeholder="留空即可，系统自动创建" />
-                <p className="text-xs text-crystal-500 mt-2">系统自动在 <code className="text-xs bg-gray-200 px-1 rounded">backend/weibo_profiles/your_user_id</code> 创建</p>
+                <p className="text-xs text-crystal-500 mt-2">系统自动在 <code className="text-xs px-1 rounded">backend/weibo_profiles/your_user_id</code> 创建</p>
               </div>
             )}
             <Button type="submit" isLoading={isBinding} className="w-full">绑定</Button>
@@ -296,9 +332,9 @@ export default function PlatformsPage() {
         </Modal>
 
         {/* ---- 小红书 Modal ---- */}
-        <Modal isOpen={modal === 'xiaohongshu'} onClose={() => setModal(null)} title="绑定小红书">
-          <form onSubmit={(e) => handleBrowserBind('xiaohongshu', e)} className="space-y-4">
-            <div className="text-xs text-crystal-600 bg-crystal-50 border border-crystal-200 rounded-lg px-3 py-2 space-y-1">
+        <Modal isOpen={modal === 'xiaohongshu'} onClose={() => setModal(null)} title="绑定小红书" dark maxWidth="max-w-md">
+          <form onSubmit={(e) => handleBrowserBind('xiaohongshu', e)} className="space-y-3">
+            <div className="guide-box text-xs rounded-lg px-3 py-2.5 space-y-1 border">
               <p><strong>绑定步骤：</strong></p>
               <p>1. 填写备注（选填）→ 点击「绑定」</p>
               <p>2. 点击「打开浏览器登录」</p>
@@ -315,20 +351,20 @@ export default function PlatformsPage() {
               {showAdvanced ? '收起高级选项' : '展开高级选项（一般不需要填）'}
             </button>
             {showAdvanced && (
-              <div className="p-4 rounded-xl bg-crystal-50 border border-crystal-200">
+              <div className="p-3 rounded-xl guide-box border">
                 <label className="block text-sm font-medium text-crystal-900 mb-1.5">Chrome Profile 路径</label>
                 <input type="text" value={profileDir} onChange={e => setProfileDir(e.target.value)}
                   className="w-full px-4 py-2.5 rounded-xl border border-crystal-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-gilt-400 focus:border-transparent" placeholder="留空即可，系统自动创建" />
-                <p className="text-xs text-crystal-500 mt-2">系统自动在 <code className="text-xs bg-gray-200 px-1 rounded">backend/xiaohongshu_profiles/your_user_id</code> 创建</p>
+                <p className="text-xs text-crystal-500 mt-2">系统自动在 <code className="text-xs px-1 rounded">backend/xiaohongshu_profiles/your_user_id</code> 创建</p>
               </div>
             )}
             <Button type="submit" isLoading={isBinding} className="w-full">绑定</Button>
           </form>
         </Modal>
 
-        <Modal isOpen={modal === 'douyin'} onClose={() => setModal(null)} title="绑定抖音">
-          <form onSubmit={(e) => handleBrowserBind('douyin', e)} className="space-y-4">
-            <div className="text-xs text-crystal-600 bg-crystal-50 border border-crystal-200 rounded-lg px-3 py-2 space-y-1">
+        <Modal isOpen={modal === 'douyin'} onClose={() => setModal(null)} title="绑定抖音" dark maxWidth="max-w-md">
+          <form onSubmit={(e) => handleBrowserBind('douyin', e)} className="space-y-3">
+            <div className="guide-box text-xs rounded-lg px-3 py-2.5 space-y-1 border">
               <p><strong>绑定步骤：</strong></p>
               <p>1. 填写备注（选填）→ 点击「绑定」</p>
               <p>2. 点击「打开浏览器登录」</p>
@@ -345,11 +381,11 @@ export default function PlatformsPage() {
               {showAdvanced ? '收起高级选项' : '展开高级选项（一般不需要填）'}
             </button>
             {showAdvanced && (
-              <div className="p-4 rounded-xl bg-crystal-50 border border-crystal-200">
+              <div className="p-3 rounded-xl guide-box border">
                 <label className="block text-sm font-medium text-crystal-900 mb-1.5">Chrome Profile 路径</label>
                 <input type="text" value={profileDir} onChange={e => setProfileDir(e.target.value)}
                   className="w-full px-4 py-2.5 rounded-xl border border-crystal-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-gilt-400 focus:border-transparent" placeholder="留空即可，系统自动创建" />
-                <p className="text-xs text-crystal-500 mt-2">系统自动在 <code className="text-xs bg-gray-200 px-1 rounded">backend/douyin_profiles/your_user_id</code> 创建</p>
+                <p className="text-xs text-crystal-500 mt-2">系统自动在 <code className="text-xs px-1 rounded">backend/douyin_profiles/your_user_id</code> 创建</p>
               </div>
             )}
             <Button type="submit" isLoading={isBinding} className="w-full">绑定</Button>

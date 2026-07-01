@@ -103,7 +103,19 @@ export const authApi = {
       body: JSON.stringify(data),
     }),
 
-  me: () => apiFetch<{ id: number; email: string; nickname?: string }>('/api/auth/me'),
+  me: () => apiFetch<{ id: string; email: string; nickname?: string; phone?: string; created_at?: string }>('/api/auth/me'),
+
+  updateProfile: (data: { nickname?: string; phone?: string }) =>
+    apiFetch<{ id: string; email: string; nickname?: string; phone?: string; created_at?: string }>('/api/auth/profile', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+
+  changePassword: (data: { old_password: string; new_password: string }) =>
+    apiFetch<{ message: string }>('/api/auth/password', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
 };
 
 // === Content API ===
@@ -317,3 +329,8 @@ export const imageApi = {
 };
 
 export { getToken, API_BASE, getPlatform };
+
+// === System API ===
+export const systemApi = {
+  getServerIp: () => apiFetch<{ ip: string }>('/api/system/server-ip'),
+};
