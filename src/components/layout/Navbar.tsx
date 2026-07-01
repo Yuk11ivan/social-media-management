@@ -4,20 +4,25 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 
 import { motion, AnimatePresence } from 'framer-motion';
 
-import { Sparkles, Menu, X, User, LogOut } from 'lucide-react';
+import { Menu, X, User, LogOut } from 'lucide-react';
 
 import { useAuthStore } from '../../store/authStore';
 import { useIsHomePage } from '../../hooks/useIsHomePage';
+import AltusWordmark from '../brand/AltusWordmark';
 
 
 
 const NAV_LINKS = [
 
-  { to: '/', label: '首页' }, { to: '/generate', label: '内容生成' },
+  { to: '/', label: '首页' },
+
+  { to: '/platforms', label: '平台管理' },
+
+  { to: '/generate', label: '内容生成' },
 
   { to: '/push', label: '推送发布' },
 
-  { to: '/history', label: '历史记录' }, { to: '/platforms', label: '平台管理' },
+  { to: '/history', label: '历史记录' },
 
 ];
 
@@ -57,24 +62,10 @@ export default function Navbar() {
 
       <div className="max-w-7xl mx-auto px-5 sm:px-8">
 
-        <div className="flex items-center h-16">
+        <div className="flex items-center h-20">
 
-          <Link to="/" className="flex items-center gap-2.5 group shrink-0">
-
-            <div className="w-9 h-9 rounded-xl btn-gilt flex items-center justify-center" style={{ boxShadow: '0 2px 8px rgba(160,130,80,0.2), inset 0 1px 0 rgba(255,255,255,0.2)' }}>
-
-              <Sparkles className="w-5 h-5 text-white" />
-
-            </div>
-
-            <div className="flex-col hidden sm:flex">
-
-              <span className={`font-heading font-bold text-lg leading-tight ${onHero ? 'text-white' : 'text-crystal-900'}`}>Altus</span>
-
-              <span className={`text-[10px] font-medium leading-tight ${onHero ? 'text-white/70' : 'text-crystal-500'}`}>奥途智营</span>
-
-            </div>
-
+          <Link to="/" className="group shrink-0 py-1">
+            <AltusWordmark onHero={onHero} />
           </Link>
 
 

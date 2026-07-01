@@ -43,9 +43,9 @@ export default {
         weibo: '#E05244',
       },
       fontFamily: {
-        heading: ['Outfit', 'Inter', 'sans-serif'],
-        body: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
+        heading: ['"Noto Serif SC"', 'STSong', 'SimSun', 'serif'],
+        body: ['"Noto Serif SC"', 'STSong', 'SimSun', 'serif'],
+        mono: ['"Noto Serif SC"', 'STSong', 'SimSun', 'serif'],
       },
       borderRadius: { DEFAULT: '0.75rem' },
       animation: {

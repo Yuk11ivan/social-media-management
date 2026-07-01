@@ -18,29 +18,31 @@ export interface HomeSlide {
 interface Props {
   slides: HomeSlide[];
   footer?: ReactNode;
-  intervalMs?: number;
 }
 
-export default function HomeFullPageCarousel({ slides, footer, intervalMs = 8000 }: Props) {
+export default function HomeFullPageCarousel({ slides, footer }: Props) {
   const [index, setIndex] = useState(0);
   const count = slides.length;
   const slide = slides[index];
 
-  useEffect(() => {
-    if (count <= 1) return;
-    const timer = setInterval(() => setIndex((i) => (i + 1) % count), intervalMs);
-    return () => clearInterval(timer);
-  }, [count, intervalMs]);
-
   const prev = () => setIndex((i) => (i - 1 + count) % count);
   const next = () => setIndex((i) => (i + 1) % count);
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') setIndex((i) => (i - 1 + count) % count);
+      if (e.key === 'ArrowRight') setIndex((i) => (i + 1) % count);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [count]);
+
   return (
     <div className="relative h-screen overflow-hidden bg-crystal-900">
-      <ImageCarouselBackground showDots={false} />
+      <ImageCarouselBackground showDots={false} autoPlay />
 
       <div className="relative z-10 h-full flex flex-col">
-        <div className="flex-1 flex items-center px-6 sm:px-8 pt-16 pb-28">
+        <div className="flex-1 flex items-center px-6 sm:px-10 lg:px-12 pt-20 pb-32">
           <div className="w-full max-w-7xl mx-auto">
             <AnimatePresence mode="wait">
               <motion.div
@@ -70,27 +72,30 @@ export default function HomeFullPageCarousel({ slides, footer, intervalMs = 8000
             </div>
           )}
 
-          <div className={`flex items-center justify-between gap-3 px-4 sm:px-8 ${footer ? 'pb-3 pt-2' : 'pb-6 pt-2'}`}>
+          <div className={`flex items-center justify-between gap-4 px-4 sm:px-8 ${footer ? 'pb-3 pt-3' : 'pb-6 pt-3'}`}>
             <button
               type="button"
               onClick={prev}
               aria-label="上一屏"
-              className="w-9 h-9 rounded-full border border-white/20 bg-white/10 backdrop-blur-md text-white hover:bg-white/20 transition-colors flex items-center justify-center shrink-0"
+              className="w-10 h-10 rounded-full border border-white/20 bg-white/10 backdrop-blur-md text-white hover:bg-white/20 transition-colors flex items-center justify-center shrink-0"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
 
-            <div className="flex flex-wrap justify-center gap-1.5 max-w-[70vw]">
+            <div className="flex flex-wrap justify-center gap-2 max-w-[65vw]">
               {slides.map((s, i) => (
                 <button
                   key={s.id}
                   type="button"
                   onClick={() => setIndex(i)}
-                  title={s.label}
-                  className={`h-1.5 rounded-full transition-all duration-300 ${
-                    i === index ? 'w-6 bg-white' : 'w-1.5 bg-white/40 hover:bg-white/60'
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                    i === index
+                      ? 'bg-white text-crystal-900'
+                      : 'border border-white/20 text-white/75 hover:bg-white/10 hover:text-white'
                   }`}
-                />
+                >
+                  {s.label}
+                </button>
               ))}
             </div>
 
@@ -98,7 +103,7 @@ export default function HomeFullPageCarousel({ slides, footer, intervalMs = 8000
               type="button"
               onClick={next}
               aria-label="下一屏"
-              className="w-9 h-9 rounded-full border border-white/20 bg-white/10 backdrop-blur-md text-white hover:bg-white/20 transition-colors flex items-center justify-center shrink-0"
+              className="w-10 h-10 rounded-full border border-white/20 bg-white/10 backdrop-blur-md text-white hover:bg-white/20 transition-colors flex items-center justify-center shrink-0"
             >
               <ChevronRight className="w-5 h-5" />
             </button>

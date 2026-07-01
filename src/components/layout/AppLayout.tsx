@@ -2,10 +2,10 @@ import { useEffect, type ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useIsHomePage } from '../../hooks/useIsHomePage';
 import { useUIStore } from '../../stores/uiStore';
-import NoiseOverlay from './NoiseOverlay';
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
 import HeaderBar from './HeaderBar';
+import DashboardBackground from './DashboardBackground';
 
 interface Props { children: ReactNode; }
 
@@ -25,9 +25,7 @@ export default function AppLayout({ children }: Props) {
   }, [location.pathname]);
 
   return (
-    <div className="relative min-h-screen bg-crystal-50">
-      <NoiseOverlay />
-
+    <div className={`relative min-h-screen ${isHomePage ? 'bg-crystal-900' : 'dashboard-theme bg-crystal-900'}`}>
       {isHomePage ? (
         <>
           <Navbar />
@@ -36,15 +34,21 @@ export default function AppLayout({ children }: Props) {
           </main>
         </>
       ) : (
-        <div className="flex h-screen overflow-hidden">
-          <Sidebar />
-          <div className="flex-1 flex flex-col" style={{ paddingLeft: sidebarCollapsed ? 72 : 240 }}>
-            <HeaderBar />
-            <main className="flex-1 overflow-y-auto mt-14" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(0,0,0,0.08) transparent' }}>
-              {children}
-            </main>
+        <>
+          <DashboardBackground />
+          <div className="relative z-10 flex h-screen overflow-hidden">
+            <Sidebar />
+            <div className="flex-1 flex flex-col min-w-0" style={{ paddingLeft: sidebarCollapsed ? 72 : 240 }}>
+              <HeaderBar />
+              <main
+                className="flex-1 overflow-y-auto mt-14 px-4 sm:px-6 py-6"
+                style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.15) transparent' }}
+              >
+                {children}
+              </main>
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

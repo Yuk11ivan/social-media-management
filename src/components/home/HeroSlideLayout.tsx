@@ -47,28 +47,32 @@ interface Props {
 
 export default function HeroSlideLayout({ badge, title, subtitle, actions, extra, tags }: Props) {
   return (
-    <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center w-full">
-      <div>
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/15 bg-white/10 backdrop-blur-md mb-6 sm:mb-8">
+    <div className="grid lg:grid-cols-2 gap-16 lg:gap-28 items-center w-full">
+      <div className="flex flex-col gap-12 sm:gap-14 lg:gap-16 max-w-xl lg:max-w-2xl">
+        <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full border border-white/15 bg-white/10 backdrop-blur-md w-fit">
           <motion.div animate={{ rotate: 360 }} transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}>
             <Sparkles className="w-4 h-4 text-gilt-300" />
           </motion.div>
-          <span className="text-xs font-semibold text-gilt-200 tracking-wide uppercase">{badge}</span>
+          <span className="text-xs sm:text-sm font-semibold text-gilt-200 tracking-wide uppercase">{badge}</span>
         </div>
 
-        <h2 className="text-4xl sm:text-5xl lg:text-6xl font-heading font-extrabold text-white leading-[1.1] mb-5">
+        <h2 className="text-4xl sm:text-5xl lg:text-[3.25rem] font-heading font-bold text-white leading-[1.35] -my-2">
           {title}
         </h2>
 
-        <p className="text-base sm:text-lg text-white/75 max-w-xl mb-8 leading-relaxed">{subtitle}</p>
+        <p className="text-base sm:text-lg text-white/75 leading-[2] -my-2">{subtitle}</p>
 
-        {extra}
+        {extra && <div className="-my-2">{extra}</div>}
 
-        {actions && <div className="flex flex-col sm:flex-row flex-wrap gap-4">{actions}</div>}
+        {actions && (
+          <div className="flex flex-col sm:flex-row flex-wrap gap-6 sm:gap-8 -my-2">
+            {actions}
+          </div>
+        )}
       </div>
 
-      <div className="hidden lg:flex items-center justify-center relative h-[380px] xl:h-[420px]">
-        <div className="relative w-full h-full flex flex-col justify-center gap-3 overflow-hidden">
+      <div className="hidden lg:flex items-center justify-center relative h-[400px] xl:h-[440px]">
+        <div className="relative w-full h-full flex flex-col justify-center gap-5 overflow-hidden">
           {tags.map((t, i) => (
             <TagRow key={i} {...t} />
           ))}

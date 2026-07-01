@@ -23,7 +23,7 @@
 html { scroll-behavior: smooth; }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Noto Serif SC', STSong, SimSun, serif;
   background: var(--crystal-50);
   color: var(--crystal-800);
   min-height: 100vh;
@@ -188,4 +188,135 @@ body {
 
 @layer utilities {
   .text-gradient { @apply bg-clip-text text-transparent; }
+
+  .altus-wordmark {
+    font-family: 'Noto Serif SC', STSong, SimSun, serif;
+    font-weight: 900;
+    font-style: italic;
+    font-size: clamp(2.25rem, 4vw, 3.25rem);
+    line-height: 1;
+    letter-spacing: 0.12em;
+    background-size: 220% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: altus-shine 5s linear infinite;
+  }
+
+  .altus-wordmark-hero {
+    background-image: linear-gradient(
+      105deg,
+      #a8b4c4 0%,
+      #f0f4fa 18%,
+      #ffffff 35%,
+      #d8e2ee 52%,
+      #ffffff 68%,
+      #b8c4d4 85%,
+      #eef2f8 100%
+    );
+  }
+
+  .altus-wordmark-light {
+    background-image: linear-gradient(
+      105deg,
+      #6b6358 0%,
+      #a0988b 30%,
+      #5c564c 55%,
+      #887248 80%,
+      #3d3831 100%
+    );
+    animation: none;
+    filter: none !important;
+  }
+}
+
+@keyframes altus-shine {
+  0% { background-position: 0% center; }
+  100% { background-position: 220% center; }
+}
+
+/* ===== Dashboard dark theme (sync with homepage) ===== */
+.dashboard-theme {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.dashboard-theme .text-crystal-900 { color: rgba(255, 255, 255, 0.95) !important; }
+.dashboard-theme .text-crystal-800 { color: rgba(255, 255, 255, 0.9) !important; }
+.dashboard-theme .text-crystal-700 { color: rgba(255, 255, 255, 0.8) !important; }
+.dashboard-theme .text-crystal-600 { color: rgba(255, 255, 255, 0.7) !important; }
+.dashboard-theme .text-crystal-500 { color: rgba(255, 255, 255, 0.55) !important; }
+.dashboard-theme .text-crystal-400 { color: rgba(255, 255, 255, 0.45) !important; }
+
+.dashboard-theme .bg-white.text-crystal-900,
+.dashboard-theme .bg-white.text-crystal-600,
+.dashboard-theme button.bg-white {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+  color: #1e1b16 !important;
+}
+
+.dashboard-theme .bg-white.text-white {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+  color: #1e1b16 !important;
+}
+.dashboard-theme .bg-crystal-50 { background-color: rgba(255, 255, 255, 0.05) !important; }
+.dashboard-theme .bg-crystal-100 { background-color: rgba(255, 255, 255, 0.1) !important; }
+.dashboard-theme .bg-crystal-100\/80 { background-color: rgba(255, 255, 255, 0.1) !important; }
+.dashboard-theme .hover\:bg-crystal-50:hover { background-color: rgba(255, 255, 255, 0.08) !important; }
+.dashboard-theme .hover\:bg-crystal-100:hover { background-color: rgba(255, 255, 255, 0.12) !important; }
+.dashboard-theme .hover\:bg-white\/80:hover { background-color: rgba(255, 255, 255, 0.12) !important; }
+
+.dashboard-theme .border-crystal-100 { border-color: rgba(255, 255, 255, 0.08) !important; }
+.dashboard-theme .border-crystal-200 { border-color: rgba(255, 255, 255, 0.15) !important; }
+.dashboard-theme .border-crystal-300 { border-color: rgba(255, 255, 255, 0.2) !important; }
+
+.dashboard-theme .glass,
+.dashboard-theme .glass-card,
+.dashboard-theme .card-premium,
+.dashboard-theme .card-stat {
+  background: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(16px) saturate(120%);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+}
+
+.dashboard-theme .card-premium:hover,
+.dashboard-theme .glass-card:hover {
+  border-color: rgba(212, 191, 138, 0.35) !important;
+  background: rgba(255, 255, 255, 0.11) !important;
+}
+
+.dashboard-theme .btn-crystal {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+.dashboard-theme .btn-crystal:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+}
+
+.dashboard-theme input:not([type='checkbox']):not([type='radio']),
+.dashboard-theme textarea,
+.dashboard-theme select {
+  background-color: rgba(0, 0, 0, 0.28) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+.dashboard-theme input::placeholder,
+.dashboard-theme textarea::placeholder {
+  color: rgba(255, 255, 255, 0.38) !important;
+}
+
+.dashboard-theme .shadow-sm { box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25) !important; }
+
+.dashboard-theme .text-red-500 { color: #f87171 !important; }
+.dashboard-theme .hover\:text-red-500:hover { color: #fca5a5 !important; }
+.dashboard-theme .hover\:bg-red-50:hover { background-color: rgba(239, 68, 68, 0.12) !important; }
+.dashboard-theme .hover\:bg-red-50\/50:hover { background-color: rgba(239, 68, 68, 0.12) !important; }
+
+.dashboard-theme ::selection {
+  background: rgba(212, 191, 138, 0.35);
+  color: #fff;
 }
