@@ -484,7 +484,8 @@ class AIService:
         results = []
         for platform in platforms:
             # 微信正文不含配图占位符，配图在推送时统一追加到文末
-            descs = image_descriptions if platform != "wechat" else []
+            # 所有平台均不生成配图占位符，配图由推送系统统一处理
+            descs = []
             content = self.adapt_for_platform(text, platform, descs)
             if all_images:
                 content.image = all_images[0]

@@ -30,7 +30,7 @@ function useCountUp(target: number, duration = 1600, s = true) {
   return c;
 }
 
-const WORDS = ['微信公众号', '小红书笔记', '微博话题', '品牌文案', '营销内容'];
+const WORDS = ['微信公众号', '小红书笔记', '微博话题', '抖音图文', '品牌文案'];
 
 function RotatingText() {
   const [i, setI] = useState(0);
@@ -81,9 +81,9 @@ const DEFAULT_TAGS: TagLine[] = [
 ];
 
 const FEATURES = [
-  { icon: <Wand2 className="w-5 h-5" />, title: 'AI 内容生成', desc: '自动为微信、小红书、微博生成风格适配的标题与正文' },
+  { icon: <Wand2 className="w-5 h-5" />, title: 'AI 内容生成', desc: '自动为微信、小红书、微博、抖音生成风格适配的标题与正文' },
   { icon: <Archive className="w-5 h-5" />, title: '历史记录', desc: '按平台分类保存生成内容与推送日志' },
-  { icon: <Send className="w-5 h-5" />, title: '多平台分发', desc: '一键推送至微信草稿箱、小红书编辑器、微博' },
+  { icon: <Send className="w-5 h-5" />, title: '多平台分发', desc: '一键推送至微信草稿箱、小红书编辑器、微博、抖音' },
   { icon: <BarChart3 className="w-5 h-5" />, title: '数据看板', desc: '追踪各平台发布记录与推送状态' },
 ];
 
@@ -204,7 +204,7 @@ export default function HomePage() {
           <span className="block h-[1.35em] mt-4 sm:mt-5">运营<RotatingText /></span>
         </>
       ),
-      subtitle: '输入内容，AI 为微信、小红书、微博自动生成风格适配的标题和文案，一键推送到各平台草稿箱',
+      subtitle: '输入内容，AI 为微信、小红书、微博、抖音自动生成风格适配的标题和文案，一键推送到各平台草稿箱',
       actions: (
         <>
           <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
