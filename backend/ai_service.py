@@ -168,19 +168,16 @@ class AIService:
     # ===================== Prompt 构建 =====================
 
     def _build_image_context(self, image_descriptions: list[dict]) -> str:
-        """根据图片分析结果构建配图上下文（微信不使用，见 generate_all_platforms）"""
+        """根据图片分析结果构建配图上下文（仅供 AI 理解内容，不生成占位符）"""
         if not image_descriptions:
             return ""
 
-        lines = ["\n【可用配图及插入位置建议】"]
+        lines = ["\n【配图信息（供你理解内容，正文中不要提及图片）】"]
         for img in image_descriptions:
             lines.append(
-                f"图片{img['index']}: {img['description']}\n"
-                f"  → 建议插入位置: {img['suggested_position']}"
+                f"图片{img['index']}: {img['description']}"
             )
-        lines.append("\n【重要】请在文章中使用 [插入图片N] 标记来精确标注每张图片的插入位置。")
-        lines.append("例如：第一张图用作封面放在标题下方，第二张在第二段之后...")
-        lines.append("每张图片必须有一个对应的 [插入图片N] 占位符。")
+        lines.append("\n注意：配图由系统单独上传处理，正文中不要写任何图片占位符或图片描述。")
         return "\n".join(lines)
 
     def _wechat_prompt(self, image_descriptions: list[dict] = None) -> str:
@@ -238,16 +235,6 @@ class AIService:
 - 穿搭分享：身材参考 + 单品链接 + 搭配思路 + 场合建议
 - 知识干货：问题引入 + 方法论 + 实操步骤 + 常见误区
 """
-        if img_count > 0:
-            base += f"""
-【配图要求】
-用户提供了{img_count}张配图。请严格按照以下要求插入图片占位符：
-1. 每张图片必须有一个对应的 [插入图片N] 占位符（N从1开始）
-2. [插入图片N] 必须独占一行
-3. 参考图片内容描述来决定每张图的最佳插入位置
-4. 第1张图通常是最吸引眼球的封面图，放在标题下方第一行
-5. 确保{img_count}个占位符全部出现在内容中
-"""
         base += """
 【话题标签策略】
 1. 1-2个大流量标签（如#好物分享 #护肤 #穿搭）
@@ -255,8 +242,10 @@ class AIService:
 3. 1个品牌/产品相关标签（如#兰蔻 #MUJI）
 4. 标签之间用英文逗号分隔
 
+注意：正文中不要写任何图片占位符（如[插入图片]），图片由系统单独上传处理。
+
 请返回JSON格式（不要包含markdown代码块标记）：
-{"title": "20字以内标题+emoji", "content": "正文内容（含[插入图片N]占位符）", "hashtags": ["#标签1", "#标签2", "#标签3"]}"""
+{"title": "20字以内标题+emoji", "content": "正文内容", "hashtags": ["#标签1", "#标签2", "#标签3"]}"""
         return base
 
     @staticmethod
@@ -343,14 +332,8 @@ class AIService:
                 }
 
             content = result.get("content", "")
-            if platform not in ("douyin", "wechat") and img_count > 0:
-                before = content
-                content = self._inject_image_placeholders(content, img_count)
-                if content != before:
-                    print(f"  ⚠ [{platform}] 缺少图片占位符，已均匀插入 {img_count} 处")
-
-            if platform == "wechat":
-                content = strip_image_placeholders(content)
+            # 所有平台统一清除图片占位符，配图由推送系统独立处理
+            content = strip_image_placeholders(content)
 
             return PlatformContent(
                 platform=platform,
@@ -442,7 +425,7 @@ class AIService:
                 continue
 
         # 最终降级
-        fallback_content = strip_image_placeholders(text) if platform == "wechat" else text
+        fallback_content = strip_image_placeholders(text)
         return PlatformContent(
             platform=platform,
             platform_name=platform_names.get(platform, platform),
