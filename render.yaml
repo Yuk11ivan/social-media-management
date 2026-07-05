@@ -1,0 +1,37 @@
+services:
+  # ===== FastAPI 后端 =====
+  - type: web
+    name: altus-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: SERVER_HOST
+        value: 0.0.0.0
+      # 以下从 Render Dashboard 环境变量中设置（安全）
+      # - key: DEEPSEEK_API_KEY
+      # - key: BAILIAN_API_KEY
+      # - key: DB_HOST
+      # - key: DB_PORT
+      # - key: DB_USER
+      # - key: DB_PASSWORD
+      # - key: DB_NAME
+      # - key: JWT_SECRET
+
+  # ===== React 前端 =====
+  - type: static
+    name: altus-frontend
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_BASE
+        value: https://altus-api.onrender.com
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
